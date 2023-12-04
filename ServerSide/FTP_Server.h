@@ -1,6 +1,5 @@
 #ifndef FTP_SERVER_H
-#define FTP_SERVER_H 
-
+#define FTP_SERVER_H
 
 #include <stdio.h>
 #include <dirent.h>
@@ -45,18 +44,18 @@ int send_response(int sockfd, int rc);
 
 /**
  * Receive data on sockfd
- * Returns -1 on error, number of bytes received 
+ * Returns -1 on error, number of bytes received
  * on success
  */
-int recv_data(int sockfd, char* buf, int bufsize);
+int recv_data(int sockfd, char *buf, int bufsize);
 
 /**
  * Authenticate a user's credentials
  * Return 1 if authenticated, 0 if not
  */
-int ftserve_check_user(char*user, char*pass);
+int ftserve_check_user(char *user, char *pass);
 
-/** 
+/**
  * Log in connected client
  */
 int ftserve_login(int sock_control);
@@ -66,21 +65,20 @@ int ftserve_login(int sock_control);
  * send response
  * Returns response code
  */
-int ftserve_recv_cmd(int sock_control, char*cmd, char*arg);
+int ftserve_recv_cmd(int sock_control, char *cmd, char *arg);
 
 /**
  * Connect to remote host at given port
  * Returns:	socket fd on success, -1 on error
  */
-int socket_connect(int port, char*host);
+int socket_connect(int port, char *host);
 
 /**
- * Open data connection to client 
+ * Open data connection to client
  * Returns: socket for data connection
  * or -1 on error
  */
 int ftserve_start_data_conn(int sock_control);
-
 
 /**
  * Send list of files in current directory
@@ -94,7 +92,7 @@ int ftserve_list(int sock_data, int sock_control);
  * over data connection
  * Return -1 on error, 0 on success
  */
-int ftpServer_cwd(int sock_control, char* folderName);
+int ftpServer_cwd(int sock_control, char *folderName);
 
 /**
  * Send list of files in current directory
@@ -108,10 +106,10 @@ void ftpServer_pwd(int sock_control, int sock_data);
  * control message over control connection
  * Handles case of null or invalid filename
  */
-void ftserve_retr(int sock_control, int sock_data, char* filename);
+void ftserve_retr(int sock_control, int sock_data, char *filename);
 
-int recvFile(int sock_control ,int sock_data, char* filename);
-/** 
+int recvFile(int sock_control, int sock_data, char *filename);
+/**
  * Child process handles connection to client
  */
 void ftserve_process(int sock_control);
