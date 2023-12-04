@@ -29,7 +29,8 @@ typedef struct sockaddr_in SOCKADDR_IN;
 typedef struct sockaddr SOCKADDR;
 typedef struct addrinfo ADDRINFO;
 
-struct command {
+struct command
+{
 	char arg[MAX_SIZE];
 	char code[5];
 };
@@ -54,11 +55,10 @@ int read_reply(int sock_control);
  */
 int ftclient_send_cmd(struct command *cmd, int sock_control);
 
-/** 
+/**
  * Read input from command line
  */
-void read_input(char* user_input, int size);
-
+void read_input(char *user_input, int size);
 
 /**
  * Get login details from user and
@@ -68,8 +68,8 @@ void ftclient_login(int sock_control);
 
 /**
  * Parse command in cstruct
- */ 
-int ftclient_read_command(char* user_input, int size, struct command *cstruct);
+ */
+int ftclient_read_command(char *user_input, int size, struct command *cstruct);
 
 /**
  * Create listening socket on remote host
@@ -88,15 +88,15 @@ int socket_accept(int sock_listen);
  */
 int ftclient_open_conn(int sock_con);
 
-/** 
+/**
  * Do list commmand
  */
 int ftclient_list(int sock_data, int sock_ctrl);
 
 /**
- * Do get <filename> command 
+ * Do get <filename> command
  */
-int ftclient_get(int data_sock, int sock_control, char* arg);
+int ftclient_get(int data_sock, int sock_control, char *arg);
 
-void upload(int data_sock, char* filename, int sock_control);
+void upload(int data_sock, char *filename, int sock_control);
 #endif // FTP_CLIENT_H
