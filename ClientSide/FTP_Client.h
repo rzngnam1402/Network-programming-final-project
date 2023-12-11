@@ -37,6 +37,12 @@ struct command
 	char code[5];
 };
 
+typedef struct
+{
+	char username[MAX_SIZE];
+	char password[MAX_SIZE];
+} Account;
+
 /*Validating IP Address*/
 int validate_ip(const char *ip);
 

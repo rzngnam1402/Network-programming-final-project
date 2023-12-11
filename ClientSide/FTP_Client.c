@@ -110,6 +110,70 @@ void read_input(char *user_input, int size)
 		user_input[n - 1] = '\0';
 }
 
+void change_password(char *username, char *old_password)
+{
+	fflush(stdin);
+	printf("Do you want to change your password? (y/n): ");
+	char choice;
+
+	scanf("%c", &choice);
+	if (choice == 'n')
+	{
+		printf("Welcome to the application!\n");
+		printf("Enter your command to use the app.\nFor example: ftp> ls\n\n");
+
+		return;
+	}
+	Account creds[10];
+	char new_password[MAX_SIZE];
+	const char *filename = "../ServerSide/.auth";
+	printf("Enter new password: ");
+	scanf("%s", new_password);
+	fflush(stdin);
+	FILE *fp = fopen(filename, "r");
+	if (fp == NULL)
+	{
+		printf("Cannot open .auth file\n");
+		return;
+	}
+
+	int count = 0;
+	char *lines[100];
+
+	while (fscanf(fp, "%s %s", creds[count].username, creds[count].password) != EOF)
+	{
+		count++;
+	}
+	fclose(fp);
+
+	// Tìm dòng chứa username
+	for (int i = 0; i < count; i++)
+	{
+		if (strcmp(creds[i].username, username) == 0)
+		{
+			strcpy(creds[i].password, new_password);
+			fp = fopen(filename, "w");
+			if (fp == NULL)
+			{
+				printf("Cannot open .auth file\n");
+				return;
+			}
+			for (int i = 0; i < count; i++)
+			{
+				fprintf(fp, "%s %s\n", creds[i].username, creds[i].password);
+			}
+			fclose(fp);
+			printf("Changed password successfully!\n");
+			printf("Welcome to the application!\n");
+			printf("Enter your command to use the app.\nFor example: ftp> ls\n\n");
+			return;
+		}
+	}
+
+	// Nếu không tìm thấy dòng chứa username
+	printf("Cannot find username\n");
+}
+
 /**
  * Get login details from user and
  * send to server for authentication
@@ -151,7 +215,8 @@ void ftclient_login(int sock_control)
 		printf("430 Invalid username/password.\n");
 		exit(0);
 	case 230:
-		printf("230 Successful login.\n");
+		printf("230 Successful login.\n\n");
+		change_password(user, pass);
 		break;
 	default:
 		perror("error reading message from server");
