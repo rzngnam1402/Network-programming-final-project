@@ -271,6 +271,12 @@ int ftclient_read_command(char *user_input, int size, struct command *cstruct)
 		memset(user_input, 0, MAX_SIZE);
 		strcpy(user_input, cstruct->code);
 	}
+	else if (strcmp(user_input, "sort ") == 0 || strcmp(user_input, "sort") == 0)
+	{
+		strcpy(cstruct->code, "SORT");
+		memset(user_input, 0, MAX_SIZE);
+		strcpy(user_input, cstruct->code);
+	}
 	else if (strncmp(user_input, "cd ", 3) == 0)
 	{
 		strcpy(cstruct->code, "CWD ");
@@ -309,6 +315,7 @@ int ftclient_read_command(char *user_input, int size, struct command *cstruct)
 		memset(user_input, 0, MAX_SIZE);
 		strcpy(user_input, cstruct->code);
 	}
+
 	else
 	{ // invalid
 		return -1;

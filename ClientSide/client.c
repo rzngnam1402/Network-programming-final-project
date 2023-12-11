@@ -109,6 +109,10 @@ int main(int argc, char const *argv[])
 				{
 					ftclient_list(data_sock, sock_control);
 				}
+				if (strcmp(cmd.code, "SORT") == 0)
+				{
+					ftclient_list(data_sock, sock_control);
+				}
 				else if (strcmp(cmd.code, "CWD ") == 0)
 				{
 					if (read_reply(sock_control) == 250)
