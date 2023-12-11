@@ -421,3 +421,53 @@ void upload(int data_sock, char *filename, int sock_control)
 		fclose(fd);
 	}
 }
+
+int login_menu()
+{
+	printf("Choose action:\n");
+	int choice = 0;
+	while (choice > 3 || choice <= 0)
+	{
+		printf("1. Login\n");
+		printf("2. Signup\n");
+		printf("3. Exit\n");
+		printf("Your choice: ");
+		scanf("%d", &choice);
+		fflush(stdin);
+	}
+	return choice;
+}
+
+int signup()
+{
+	printf("Register new account\n");
+	char username[MAX_USERNAME_LENGTH];
+	char password[MAX_PASSWORD_LENGTH];
+	fflush(stdin);
+	printf("Enter username: ");
+	scanf("%s", username);
+	if (strlen(username) == 0)
+	{
+		return -1;
+	}
+
+	printf("Enter password: ");
+	scanf("%s", password);
+	if (strlen(password) == 0)
+	{
+		return -1;
+	}
+
+	FILE *file = fopen("../ServerSide/.auth", "a");
+	if (file == NULL)
+	{
+		perror("Error opening file");
+		return -1;
+	}
+
+	// Write the account and password to the file
+	fprintf(file, "%s %s\n", username, password);
+	printf("Account has been registered successfully!\n\n");
+	printf("Please login to use the program\n");
+	fclose(file);
+}

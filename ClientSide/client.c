@@ -1,6 +1,6 @@
 #include "FTP_Client.h"
 
-// Compile command: gcc client.c FTPClient.c -o ftpclient
+// Compile command: gcc client.c FTP_Client.c -o ftpclient
 
 int main(int argc, char const *argv[])
 {
@@ -45,10 +45,18 @@ int main(int argc, char const *argv[])
 	}
 
 	// Get connection, welcome messages
-	printf("Connected to %s.\n", argv[1]);
+	printf("Connected to %s\n", argv[1]);
 	print_reply(read_reply(sock_control));
+	int choice = login_menu();
+	if (choice == 2) // sign up
+	{
+		signup(sock_control);
+	}
+	else if (choice != 1) // exit
+	{
+		exit(1);
+	}
 
-	/* Get name and password and send to server */
 	ftclient_login(sock_control);
 
 	while (1)

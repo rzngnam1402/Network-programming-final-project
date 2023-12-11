@@ -11,7 +11,7 @@ int main(int argc, char const *argv[])
 		perror("Error creating socket");
 		exit(1);
 	}
-
+	printf("Server started successfully\n");
 	while (1)
 	{ // wait for client request
 

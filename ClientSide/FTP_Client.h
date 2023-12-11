@@ -22,9 +22,11 @@
 #define INVALID_SOCKET -1
 #define INVALID_IP -1
 #define MAX_SIZE 1024
+#define MAX_USERNAME_LENGTH 50
+#define MAX_PASSWORD_LENGTH 50
 
 #define PORT 9000
-#define DEFAULT_PORT 3000
+#define DEFAULT_PORT 5500
 typedef struct sockaddr_in SOCKADDR_IN;
 typedef struct sockaddr SOCKADDR;
 typedef struct addrinfo ADDRINFO;
@@ -99,4 +101,8 @@ int ftclient_list(int sock_data, int sock_ctrl);
 int ftclient_get(int data_sock, int sock_control, char *arg);
 
 void upload(int data_sock, char *filename, int sock_control);
+
+int login_menu();
+int signup();
+
 #endif // FTP_CLIENT_H

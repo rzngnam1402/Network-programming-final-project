@@ -456,7 +456,7 @@ void ftserve_process(int sock_control)
 	int sock_data;
 	char cmd[5];
 	char arg[MAX_SIZE];
-
+	printf("Client connected succesfully\n");
 	// Send welcome message
 	send_response(sock_control, 220);
 
