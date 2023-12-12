@@ -113,6 +113,10 @@ int main(int argc, char const *argv[])
 				{
 					ftclient_list(data_sock, sock_control);
 				}
+				else if (strcmp(cmd.code, "FOLD") == 0)
+				{
+					ftclient_zip(data_sock, sock_control);
+				}
 				else if (strcmp(cmd.code, "CWD ") == 0)
 				{
 					if (read_reply(sock_control) == 250)
@@ -151,7 +155,7 @@ int main(int argc, char const *argv[])
 				{
 					printf("Uploading ...\n");
 					upload(data_sock, cmd.arg, sock_control);
-					printf("xong\n");
+					printf("Done!\n");
 				}
 				close(data_sock);
 			}
