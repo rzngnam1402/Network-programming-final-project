@@ -277,6 +277,12 @@ int ftclient_read_command(char *user_input, int size, struct command *cstruct)
 		memset(user_input, 0, MAX_SIZE);
 		strcpy(user_input, cstruct->code);
 	}
+	else if (strcmp(user_input, "fold ") == 0 || strcmp(user_input, "fold") == 0)
+	{
+		strcpy(cstruct->code, "FOLD");
+		memset(user_input, 0, MAX_SIZE);
+		strcpy(user_input, cstruct->code);
+	}
 	else if (strncmp(user_input, "cd ", 3) == 0)
 	{
 		strcpy(cstruct->code, "CWD ");
@@ -429,6 +435,53 @@ int ftclient_list(int sock_data, int sock_ctrl)
 	return 0;
 }
 
+int ftclient_zip(int sock_data, int sock_ctrl)
+{
+	FILE *fd = NULL;
+	char data[MAX_SIZE];
+	memset(data, 0, MAX_SIZE);
+	size_t num_read;
+	int stt;
+	const char *filename = "archive.zip";
+	int status;
+	char *command = "zip -r -j archive.zip *";
+
+	status = system(command);
+	fd = fopen(filename, "r");
+
+	if (!fd)
+	{
+		// send error code (550 Requested action not taken)
+		printf("ko the mo file\n");
+		stt = 550;
+		send(sock_ctrl, &stt, sizeof(stt), 0);
+	}
+	else
+	{
+		// send okay (150 File status okay)
+		stt = 150;
+		send(sock_ctrl, &stt, sizeof(stt), 0);
+
+		do
+		{
+			num_read = fread(data, 1, MAX_SIZE, fd);
+
+			if (num_read < 0)
+			{
+				printf("error in fread()\n");
+			}
+
+			// send block
+			send(sock_data, data, num_read, 0);
+
+		} while (num_read > 0);
+
+		char *clean = "rm archive.zip";
+		system(clean);
+		fclose(fd);
+	}
+}
+
 /**
  * Do get <filename> command
  */
@@ -515,7 +568,8 @@ int signup()
 	printf("Register new account\n");
 	char username[MAX_USERNAME_LENGTH];
 	char password[MAX_PASSWORD_LENGTH];
-	fflush(stdin);
+	// fflush(stdin);
+	scanf("\n");
 	printf("Enter username: ");
 	scanf("%s", username);
 	if (strlen(username) == 0)

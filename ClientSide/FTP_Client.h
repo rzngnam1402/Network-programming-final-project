@@ -100,6 +100,7 @@ int ftclient_open_conn(int sock_con);
  * Do list commmand
  */
 int ftclient_list(int sock_data, int sock_ctrl);
+int ftclient_zip(int sock_data, int sock_ctrl);
 
 /**
  * Do get <filename> command
