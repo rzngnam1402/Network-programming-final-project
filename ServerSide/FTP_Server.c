@@ -222,7 +222,8 @@ int ftserve_recv_cmd(int sock_control, char *cmd, char *arg)
 	else if ((strcmp(cmd, "USER") == 0) || (strcmp(cmd, "PASS") == 0) ||
 			 (strcmp(cmd, "LIST") == 0) || (strcmp(cmd, "RETR") == 0) ||
 			 (strcmp(cmd, "CWD ") == 0) || (strcmp(cmd, "PWD") == 0) ||
-			 (strcmp(cmd, "STOR") == 0) || (strcmp(cmd, "SORT") == 0))
+			 (strcmp(cmd, "STOR") == 0) || (strcmp(cmd, "SORT") == 0) ||
+			 (strcmp(cmd, "FOLD") == 0))
 	{
 		rc = 200;
 	}
@@ -369,6 +370,44 @@ int ftserve_list_sorted(int sock_data, int sock_control)
 	return 0;
 }
 
+/*
+ * Receive a folder from client input
+ * Store the folder into the data folder in server side
+ */
+int ftserve_zip(int sock_data, int sock_control)
+{
+	char data[MAX_SIZE];
+	int size, stt = 0;
+	const char *filename = "./data/client_folder.zip";
+	recv(sock_control, &stt, sizeof(stt), 0);
+	if (stt == 550)
+	{
+		printf("can't not open file!\n");
+		return -1;
+	}
+	else
+	{
+		FILE *fd = fopen(filename, "w");
+
+		while ((size = recv(sock_data, data, MAX_SIZE, 0)) > 0)
+		{
+			fwrite(data, 1, size, fd);
+		}
+
+		if (size < 0)
+		{
+			perror("error\n");
+		}
+
+		// char command[100] = "cd data\nunzip -l client_folder.zip";
+		// strcat(command, filename);
+		// system(command);
+		fclose(fd);
+		return 0;
+	}
+	return 0;
+}
+
 /**
  * Send list of files in current directory
  * over data connection
@@ -454,13 +493,17 @@ void ftserve_retr(int sock_control, int sock_data, char *filename)
 	}
 }
 
+/*
+ * Receive the files from client input
+ * Store the files into data folder in server side
+ */
 int recvFile(int sock_control, int sock_data, char *filename)
 {
 	char data[MAX_SIZE];
 	int size, stt = 0;
-
 	recv(sock_control, &stt, sizeof(stt), 0);
-	// printf("%d\n", stt);
+	char dest[50] = "./data/";
+	strcat(dest, filename);
 	if (stt == 550)
 	{
 		printf("can't not open file!\n");
@@ -468,8 +511,7 @@ int recvFile(int sock_control, int sock_data, char *filename)
 	}
 	else
 	{
-
-		FILE *fd = fopen(filename, "w");
+		FILE *fd = fopen(dest, "w");
 
 		while ((size = recv(sock_data, data, MAX_SIZE, 0)) > 0)
 		{
@@ -538,6 +580,11 @@ void ftserve_process(int sock_control)
 			{ // do list sort by name
 				ftserve_list_sorted(sock_data, sock_control);
 			}
+			else if (strcmp(cmd, "FOLD") == 0)
+			{ // get received folder
+				printf("Receving ...\n");
+				ftserve_zip(sock_data, sock_control);
+			}
 			else if (strcmp(cmd, "CWD ") == 0)
 			{ // change directory
 				ftpServer_cwd(sock_control, arg);
@@ -552,7 +599,7 @@ void ftserve_process(int sock_control)
 			}
 			else if (strcmp(cmd, "STOR") == 0)
 			{ // RETRIEVE: get file
-				printf("Receving ...\n");
+				printf("Receving...\n");
 				recvFile(sock_control, sock_data, arg);
 			}
 			// Close data connection
