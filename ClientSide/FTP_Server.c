@@ -221,8 +221,8 @@ int ftserve_recv_cmd(int sock_control, char *cmd, char *arg)
 	}
 	else if ((strcmp(cmd, "USER") == 0) || (strcmp(cmd, "PASS") == 0) ||
 			 (strcmp(cmd, "LIST") == 0) || (strcmp(cmd, "RETR") == 0) ||
-			 (strcmp(cmd, "CWD ") == 0) || (strcmp(cmd, "PWD") == 0) ||
-			 (strcmp(cmd, "STOR") == 0) || (strcmp(cmd, "SORT") == 0))
+			 (strcmp(cmd, "CWD ") == 0) || (strcmp(cmd, "PWD ") == 0) ||
+			 (strcmp(cmd, "STOR") == 0))
 	{
 		rc = 200;
 	}
@@ -321,45 +321,6 @@ int ftserve_list(int sock_data, int sock_control)
 			}
 		}
 	}
-	strcat(msgToClient, "\n");
-	if (send(sock_data, msgToClient, strlen(msgToClient), 0) < 0)
-	{
-		perror("error");
-	}
-
-	return 0;
-}
-
-int compare(const struct dirent **a, const struct dirent **b)
-{
-	return strcasecmp((*a)->d_name, (*b)->d_name);
-}
-
-int ftserve_list_sorted(int sock_data, int sock_control)
-{
-	struct dirent **output = NULL;
-	char msgToClient[MAX_SIZE];
-	memset(msgToClient, 0, MAX_SIZE);
-
-	char curr_dir[MAX_SIZE];
-	getcwd(curr_dir, sizeof(curr_dir));
-
-	int n = scandir(curr_dir, &output, NULL, compare);
-
-	if (n > 0)
-	{
-		for (int i = 0; i < n; i++)
-		{
-			if (strcmp(output[i]->d_name, ".") != 0 && strcmp(output[i]->d_name, "..") != 0)
-			{
-				strcat(msgToClient, output[i]->d_name);
-				strcat(msgToClient, "  ");
-			}
-			free(output[i]);
-		}
-		free(output);
-	}
-
 	strcat(msgToClient, "\n");
 	if (send(sock_data, msgToClient, strlen(msgToClient), 0) < 0)
 	{
@@ -533,10 +494,6 @@ void ftserve_process(int sock_control)
 			if (strcmp(cmd, "LIST") == 0)
 			{ // Do list
 				ftserve_list(sock_data, sock_control);
-			}
-			else if (strcmp(cmd, "SORT") == 0)
-			{ // do list sort by name
-				ftserve_list_sorted(sock_data, sock_control);
 			}
 			else if (strcmp(cmd, "CWD ") == 0)
 			{ // change directory
