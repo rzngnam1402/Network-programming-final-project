@@ -16,6 +16,32 @@ void trimstr(char *str, int n)
 	}
 }
 
+/**
+ * Trim whiteshpace and get array
+ * of files names from a string
+ */
+void separate_filenames(const char *input, char output[][MAX_FILENAME_LEN], int *count)
+{
+	char *token;
+	char strCopy[MAX_FILENAME_LEN * MAX_FILES];
+
+	// Copy the input string as strtok modifies the original string
+	strcpy(strCopy, input);
+	// Initialize count
+	*count = 0;
+
+	// Get the first token
+	token = strtok(strCopy, " ");
+
+	// Walk through other tokens
+	while (token != NULL)
+	{
+		strcpy(output[*count], token);
+		(*count)++;
+		token = strtok(NULL, " ");
+	}
+}
+
 int socket_create()
 {
 	int sockfd;
@@ -223,7 +249,7 @@ int ftserve_recv_cmd(int sock_control, char *cmd, char *arg)
 			 (strcmp(cmd, "LIST") == 0) || (strcmp(cmd, "RETR") == 0) ||
 			 (strcmp(cmd, "CWD ") == 0) || (strcmp(cmd, "PWD") == 0) ||
 			 (strcmp(cmd, "STOR") == 0) || (strcmp(cmd, "SORT") == 0) ||
-			 (strcmp(cmd, "FOLD") == 0))
+			 (strcmp(cmd, "FOLD") == 0) || (strcmp(cmd, "STOU") == 0))
 	{
 		rc = 200;
 	}
@@ -528,6 +554,17 @@ int recvFile(int sock_control, int sock_data, char *filename)
 	}
 	return 0;
 }
+int recvMulti(int sock_control, int sock_data, char *arg)
+{
+	int count, i;
+	char filenames[MAX_FILES][MAX_FILENAME_LEN];
+	separate_filenames(arg, filenames, &count);
+	for (i = 0; i < count; i++)
+	{
+		recvFile(sock_control, sock_data, filenames[i]);
+	}
+	return 0;
+}
 
 /**
  * Child process handles connection to client
@@ -601,6 +638,11 @@ void ftserve_process(int sock_control)
 			{ // RETRIEVE: get file
 				printf("Receving...\n");
 				recvFile(sock_control, sock_data, arg);
+			}
+			else if (strcmp(cmd, "STOU") == 0)
+			{
+				printf("Receiving...\n");
+				recvMulti(sock_control, sock_data, arg);
 			}
 			// Close data connection
 			close(sock_data);

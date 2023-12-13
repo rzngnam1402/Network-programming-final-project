@@ -117,6 +117,12 @@ int main(int argc, char const *argv[])
 				{
 					ftclient_zip(data_sock, sock_control);
 				}
+				else if (strcmp(cmd.code, "STOU") == 0)
+				{
+					printf("Uploading...");
+					ftclient_send_multiple(data_sock, cmd.arg, sock_control);
+					printf("Done!\n");
+				}
 				else if (strcmp(cmd.code, "CWD ") == 0)
 				{
 					if (read_reply(sock_control) == 250)
