@@ -332,6 +332,14 @@ int ftclient_read_command(char *user_input, int size, struct command *cstruct)
 		memset(user_input, 0, MAX_SIZE);
 		sprintf(user_input, "%s %s", cstruct->code, cstruct->arg);
 	}
+	else if (strncmp(user_input, "mget ", 4) == 0)
+	{
+		strcpy(cstruct->code, "MRET");
+		strcpy(cstruct->arg, user_input + 4);
+
+		memset(user_input, 0, MAX_SIZE);
+		sprintf(user_input, "%s %s", cstruct->code, cstruct->arg);
+	}
 	else if (strncmp(user_input, "put ", 4) == 0)
 	{
 		strcpy(cstruct->code, "STOR"); // STORE
