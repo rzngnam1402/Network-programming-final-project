@@ -123,6 +123,18 @@ int main(int argc, char const *argv[])
 					ftclient_send_multiple(data_sock, cmd.arg, sock_control);
 					printf("Done!\n");
 				}
+				else if (strcmp(cmd.code, "FIND") == 0)
+				{
+					int repl = read_reply(sock_control);
+					if (repl == 241)
+					{
+						int nums = read_reply(sock_control);
+						for (int i = 0; i < nums; ++i)
+							ftclient_list(data_sock, sock_control); // ham nay in mess tu server
+					}
+					else if (repl == 441)
+						printf("441 File not found!\n");
+				}
 				else if (strcmp(cmd.code, "CWD ") == 0)
 				{
 					if (read_reply(sock_control) == 250)
