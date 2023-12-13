@@ -1,5 +1,5 @@
 #include "FTP_Server.h"
-//result of search file
+// result of search file
 typedef struct
 {
 	int count;
@@ -255,7 +255,8 @@ int ftserve_recv_cmd(int sock_control, char *cmd, char *arg)
 			 (strcmp(cmd, "CWD ") == 0) || (strcmp(cmd, "PWD") == 0) ||
 			 (strcmp(cmd, "STOR") == 0) || (strcmp(cmd, "SORT") == 0) ||
 			 (strcmp(cmd, "FOLD") == 0) || (strcmp(cmd, "STOU") == 0) ||
-			 (strcmp(cmd, "MRET") == 0) || (strcmp(cmd, "FIND") == 0))
+			 (strcmp(cmd, "MRET") == 0) || (strcmp(cmd, "FIND") == 0) ||
+			 (strcmp(cmd, "MKDR") == 0))
 	{
 		rc = 200;
 	}
@@ -655,6 +656,34 @@ void ftserve_find(int sock_control, int sock_data, char *filename)
 		send_response(sock_control, 441);
 	free(result.files); // Free the array of file paths
 }
+// Function to create a directory
+int createDirectory(const char *path)
+{
+	int status = 0;
+	status = mkdir(path, 0755);
+
+	if (status == 0)
+	{
+		printf("Directory %s created successfully.\n", path);
+		return 0; // Success
+	}
+	else
+	{
+		perror("Error creating directory");
+		return -1; // Error
+	}
+}
+/**
+ * Make new directiory
+ * over data connection
+ */
+void ftserve_mkdir(int sock_control, int sock_data, char *arg)
+{
+	if (createDirectory(arg) == 0)
+		send_response(sock_control, 254);
+	else
+		send_response(sock_control, 456);
+}
 
 /**
  * Child process handles connection to client
@@ -747,6 +776,10 @@ void ftserve_process(int sock_control)
 			{
 				printf("Receiving...\n");
 				recvMulti(sock_control, sock_data, arg);
+			}
+			else if (strcmp(cmd, "MKDR") == 0)
+			{
+				ftserve_mkdir(sock_control, sock_data, arg);
 			}
 			// Close data connection
 			close(sock_data);
