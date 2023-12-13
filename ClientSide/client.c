@@ -109,7 +109,7 @@ int main(int argc, char const *argv[])
 				{
 					ftclient_list(data_sock, sock_control);
 				}
-				if (strcmp(cmd.code, "SORT") == 0)
+				else if (strcmp(cmd.code, "SORT") == 0)
 				{
 					ftclient_list(data_sock, sock_control);
 				}
@@ -122,6 +122,16 @@ int main(int argc, char const *argv[])
 					printf("Uploading...");
 					ftclient_send_multiple(data_sock, cmd.arg, sock_control);
 					printf("Done!\n");
+				}
+				else if (strcmp(cmd.code, "COPY") == 0)
+				{
+					int repl = read_reply(sock_control);
+					if (repl == 253)
+						printf("253 Copied successfully\n");
+					else if (repl == 454)
+						printf("454 Copy failure\n");
+					else if (repl == 455)
+						printf("455 Syntax error (COPY<filepath> <newfilepath>)\n");
 				}
 				else if (strcmp(cmd.code, "FIND") == 0)
 				{
@@ -143,6 +153,25 @@ int main(int argc, char const *argv[])
 					else if (repl == 456)
 						printf("451 Mkdir failure\n");
 				}
+				else if (strcmp(cmd.code, "CPY ") == 0)
+				{
+					int repl = read_reply(sock_control);
+					if (repl == 253)
+						printf("253 Copied successfully\n");
+					else if (repl == 454)
+						printf("454 Copy failure\n");
+					else if (repl == 455)
+						printf("455 Syntax error (cpy <filepath> <newfilepath>)\n");
+				}
+				else if (strcmp(cmd.code, "DEL ") == 0)
+				{
+					int repl = read_reply(sock_control);
+					if (repl == 252)
+						printf("252 Delete successfully\n");
+					else if (repl == 453)
+						printf("451 Delete failure\n");
+				}
+
 				else if (strcmp(cmd.code, "CWD ") == 0)
 				{
 					if (read_reply(sock_control) == 250)
