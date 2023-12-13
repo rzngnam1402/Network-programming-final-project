@@ -135,6 +135,14 @@ int main(int argc, char const *argv[])
 					else if (repl == 441)
 						printf("441 File not found!\n");
 				}
+				else if (strcmp(cmd.code, "MKDR") == 0)
+				{
+					int repl = read_reply(sock_control);
+					if (repl == 254)
+						printf("254 Mkdir successfully\n");
+					else if (repl == 456)
+						printf("451 Mkdir failure\n");
+				}
 				else if (strcmp(cmd.code, "CWD ") == 0)
 				{
 					if (read_reply(sock_control) == 250)
