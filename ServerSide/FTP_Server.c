@@ -249,7 +249,8 @@ int ftserve_recv_cmd(int sock_control, char *cmd, char *arg)
 			 (strcmp(cmd, "LIST") == 0) || (strcmp(cmd, "RETR") == 0) ||
 			 (strcmp(cmd, "CWD ") == 0) || (strcmp(cmd, "PWD") == 0) ||
 			 (strcmp(cmd, "STOR") == 0) || (strcmp(cmd, "SORT") == 0) ||
-			 (strcmp(cmd, "FOLD") == 0) || (strcmp(cmd, "STOU") == 0))
+			 (strcmp(cmd, "FOLD") == 0) || (strcmp(cmd, "STOU") == 0) ||
+			 (strcmp(cmd, "MRET") == 0))
 	{
 		rc = 200;
 	}
@@ -633,6 +634,16 @@ void ftserve_process(int sock_control)
 			else if (strcmp(cmd, "RETR") == 0)
 			{ // RETRIEVE: get file
 				ftserve_retr(sock_control, sock_data, arg);
+			}
+			else if (strcmp(cmd, "MRET") == 0)
+			{
+				int count, i;
+				char filenames[MAX_FILES][MAX_FILENAME_LEN];
+				separate_filenames(arg, filenames, &count);
+				for (int i = 0; i < count; i++)
+				{
+					ftserve_retr(sock_control, sock_data, filenames[i]);
+				}
 			}
 			else if (strcmp(cmd, "STOR") == 0)
 			{ // RETRIEVE: get file

@@ -157,6 +157,23 @@ int main(int argc, char const *argv[])
 					print_reply(read_reply(sock_control));
 					printf("Time taken %lf\n", cpu_time);
 				}
+				else if (strcmp(cmd.code, "MRET") == 0)
+				{
+					int count, i;
+					char filenames[MAX_FILES][MAX_FILENAME_LEN];
+					separate_filenames(cmd.arg, filenames, &count);
+					for (int i = 0; i < count; i++)
+					{
+						if (read_reply(sock_control) == 550)
+						{
+							print_reply(550);
+							close(data_sock);
+							continue;
+						}
+						ftclient_get(data_sock, sock_control, filenames[i]);
+						print_reply(read_reply(sock_control));
+					}
+				}
 				else if (strcmp(cmd.code, "STOR") == 0)
 				{
 					printf("Uploading ...\n");

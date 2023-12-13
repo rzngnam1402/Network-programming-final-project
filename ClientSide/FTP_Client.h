@@ -48,6 +48,11 @@ typedef struct
 /*Validating IP Address*/
 int validate_ip(const char *ip);
 
+/*
+ * Get file name from string of files
+ */
+void separate_filenames(const char *input, char output[][MAX_FILENAME_LEN], int *count);
+
 /**
  * Print response message
  */
