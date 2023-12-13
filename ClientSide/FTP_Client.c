@@ -74,6 +74,32 @@ int read_reply(int sock_control)
 }
 
 /**
+ * Trim whiteshpace and get array
+ * of files names from a string
+ */
+void separate_filenames(const char *input, char output[][MAX_FILENAME_LEN], int *count)
+{
+	char *token;
+	char strCopy[MAX_FILENAME_LEN * MAX_FILES];
+
+	// Copy the input string as strtok modifies the original string
+	strcpy(strCopy, input);
+	// Initialize count
+	*count = 0;
+
+	// Get the first token
+	token = strtok(strCopy, " ");
+
+	// Walk through other tokens
+	while (token != NULL)
+	{
+		strcpy(output[*count], token);
+		(*count)++;
+		token = strtok(NULL, " ");
+	}
+}
+
+/**
  * Input: cmd struct with an a code and an arg
  * Concats code + arg into a string and sends to server
  */
@@ -314,6 +340,14 @@ int ftclient_read_command(char *user_input, int size, struct command *cstruct)
 		memset(user_input, 0, MAX_SIZE);
 		sprintf(user_input, "%s %s", cstruct->code, cstruct->arg);
 	}
+	else if (strncmp(user_input, "mput ", 4) == 0)
+	{
+		strcpy(cstruct->code, "STOU"); // STORE multiple files
+		strcpy(cstruct->arg, user_input + 4);
+
+		memset(user_input, 0, MAX_SIZE);
+		sprintf(user_input, "%s %s", cstruct->code, cstruct->arg);
+	}
 	// quit
 	else if (strcmp(user_input, "quit") == 0)
 	{
@@ -545,6 +579,18 @@ void upload(int data_sock, char *filename, int sock_control)
 
 		fclose(fd);
 	}
+}
+
+int ftclient_send_multiple(int data_sock, char *filename, int sock_control)
+{
+	int count, i;
+	char filenames[MAX_FILES][MAX_FILENAME_LEN];
+	separate_filenames(filename, filenames, &count);
+	for (i = 0; i < count; i++)
+	{
+		upload(data_sock, filenames[i], sock_control);
+	}
+	return 0;
 }
 
 int login_menu()

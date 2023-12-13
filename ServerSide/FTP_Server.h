@@ -22,6 +22,8 @@
 #define INVALID_IP -1
 #define MAX_SIZE 1024
 #define PORT 9000
+#define MAX_FILENAME_LEN 256
+#define MAX_FILES 10
 #define DEFAULT_PORT 5500
 typedef struct sockaddr_in SOCKADDR_IN;
 typedef struct sockaddr SOCKADDR;
@@ -109,6 +111,8 @@ void ftpServer_pwd(int sock_control, int sock_data);
 void ftserve_retr(int sock_control, int sock_data, char *filename);
 
 int recvFile(int sock_control, int sock_data, char *filename);
+
+int recvMulti(int sock_control, int sock_data, char *arg);
 /**
  * Child process handles connection to client
  */

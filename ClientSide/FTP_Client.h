@@ -24,6 +24,8 @@
 #define MAX_SIZE 1024
 #define MAX_USERNAME_LENGTH 50
 #define MAX_PASSWORD_LENGTH 50
+#define MAX_FILENAME_LEN 256
+#define MAX_FILES 10
 
 #define PORT 9000
 #define DEFAULT_PORT 5500
@@ -100,6 +102,10 @@ int ftclient_open_conn(int sock_con);
  * Do list commmand
  */
 int ftclient_list(int sock_data, int sock_ctrl);
+
+/*
+ * Send folder command
+ */
 int ftclient_zip(int sock_data, int sock_ctrl);
 
 /**
@@ -108,6 +114,11 @@ int ftclient_zip(int sock_data, int sock_ctrl);
 int ftclient_get(int data_sock, int sock_control, char *arg);
 
 void upload(int data_sock, char *filename, int sock_control);
+
+/*
+ * Send multiple files command
+ */
+int ftclient_send_multiple(int data_sock, char *filename, int sock_control);
 
 int login_menu();
 int signup();
