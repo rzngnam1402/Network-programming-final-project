@@ -30,20 +30,16 @@ int splitString(char *input, char **str1, char **str2)
 {
 	if (input == NULL || strlen(input) == 0)
 	{
-		// Return error for empty string
 		return -1;
 	}
 
-	// Find the first occurrence of a space in the string
 	char *spacePos = strchr(input, ' ');
 
 	if (spacePos == NULL || *(spacePos + 1) == '\0')
 	{
-		// Return error if there is no space or there is no character after space
 		return -1;
 	}
 
-	// Calculate the length of the first substring
 	size_t len1 = spacePos - input;
 
 	// Allocate memory for the first substring and copy it
@@ -983,32 +979,26 @@ int copyOrMoveFile(char *sourceFilename, char *destinationFilename, int mode)
 	FILE *sourceFile, *destinationFile;
 	char ch;
 
-	// Open the source file for reading
 	sourceFile = fopen(sourceFilename, "rb");
 	if (sourceFile == NULL)
 	{
 		perror("Error opening source file");
-		return -1; // Error
+		return -1;
 	}
 
-	// Open the destination file for writing
-	strcat(destinationFilename, "/");
-	strcat(destinationFilename, sourceFilename);
 	destinationFile = fopen(destinationFilename, "wb");
 	if (destinationFile == NULL)
 	{
 		fclose(sourceFile);
 		perror("Error opening destination file");
-		return -1; // Error
+		return -1;
 	}
 
-	// Copy the contents of the source file to the destination file
 	while ((ch = fgetc(sourceFile)) != EOF)
 	{
 		fputc(ch, destinationFile);
 	}
 
-	// Close the files
 	fclose(sourceFile);
 	fclose(destinationFile);
 
@@ -1018,16 +1008,48 @@ int copyOrMoveFile(char *sourceFilename, char *destinationFilename, int mode)
 	}
 	else if (mode == 1)
 	{
-		remove(sourceFilename); // Remove the source file if it's a move operation
 		printf("File %s moved to %s successfully.\n", sourceFilename, destinationFilename);
 	}
 	else
 	{
 		printf("Invalid mode. Use 0 for copy or 1 for move.\n");
-		return -1; // Error
+		return -1;
+	}
+	return 0;
+}
+
+char *appendCopyFileString(const char *source)
+{
+	char *ofCopy = "OfCopy";
+
+	size_t sourceLen = strlen(source);
+	size_t ofCopyLen = strlen(ofCopy);
+	char *result;
+
+	// Check if the source has an extension
+	const char *dot = strrchr(source, '.');
+	if (dot != NULL && source[0] != '.')
+	{
+		size_t extensionLen = sourceLen - (size_t)(dot - source);
+		size_t resultLen = sourceLen + ofCopyLen + 1;
+
+		result = (char *)malloc(resultLen);
+		strncpy(result, source, sourceLen - extensionLen);
+		result[sourceLen - extensionLen] = '\0';
+		strcat(result, ofCopy);
+		strcat(result, dot);
 	}
 
-	return 0; // Success
+	else
+	{
+		size_t resultLen = sourceLen + ofCopyLen + 1;
+
+		result = (char *)malloc(resultLen);
+		strcpy(result, source);
+		strcat(result, ofCopy);
+	}
+
+	return result;
 }
 
 /**
@@ -1036,34 +1058,31 @@ int copyOrMoveFile(char *sourceFilename, char *destinationFilename, int mode)
  */
 void ftserve_copy(int sock_control, int sock_data, char *arg)
 {
-	char *from, *to;
-	printf("%d", splitString(arg, &from, &to));
-	if (splitString(arg, &from, &to) == 0)
-	{
-		if (isFile(from))
-		{
-			printf("huuson");
-			if (copyOrMoveFile(from, to, 1) == 0)
-				send_response(sock_control, 253);
-			else
-				send_response(sock_control, 454);
-		}
+	char *result = appendCopyFileString(arg);
 
-		if (isFolder(from))
-		{
-			printf("huuson9");
-			strcat(to, "/");
-			strcat(to, from);
-			if (copyDirectory(from, to) == 0)
-				send_response(sock_control, 253);
-			else
-				send_response(sock_control, 454);
-		}
-		free(from);
-		free(to);
+	if (isFile(arg))
+	{
+		printf("%s\n", arg);
+		printf("%s\n", result);
+		if (copyOrMoveFile(arg, result, 1) == 0)
+			send_response(sock_control, 253);
+		else
+			send_response(sock_control, 454);
 	}
+
+	if (isFolder(arg))
+	{
+		createDirectory(result);
+		if (copyDirectory(arg, result) == 0)
+			send_response(sock_control, 253);
+		else
+			send_response(sock_control, 454);
+	}
+
 	else
 		send_response(sock_control, 455);
+
+	free(result);
 }
 /**
  * Child process handles connection to client
