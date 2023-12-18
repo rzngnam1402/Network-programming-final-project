@@ -45,6 +45,8 @@ typedef struct
 	char password[MAX_SIZE];
 } Account;
 
+char current_username[MAX_SIZE];
+
 /*Validating IP Address*/
 int validate_ip(const char *ip);
 
@@ -118,12 +120,19 @@ int ftclient_zip(int sock_data, int sock_ctrl);
  */
 int ftclient_get(int data_sock, int sock_control, char *arg);
 
+int ftclient_private_get(int data_sock, int sock_control, char *arg);
+
 void upload(int data_sock, char *filename, int sock_control);
 
 /*
  * Send multiple files command
  */
 int ftclient_send_multiple(int data_sock, char *filename, int sock_control);
+
+/*
+ * Private send command
+ */
+void private_upload(int data_sock, char *filename, int sock_control);
 
 int login_menu();
 int signup();

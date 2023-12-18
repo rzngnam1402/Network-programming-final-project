@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -22,11 +23,15 @@
 #define INVALID_IP -1
 #define MAX_SIZE 1024
 #define PORT 9000
+#define PATH_MAX 4096
+#define MAX_USERNAME_LENGTH 1024
 #define MAX_FILENAME_LEN 256
 #define MAX_FILES 10
 #define DEFAULT_PORT 5500
 typedef struct sockaddr_in SOCKADDR_IN;
 typedef struct sockaddr SOCKADDR;
+
+char current_username[MAX_USERNAME_LENGTH];
 
 /**
  * Trim whiteshpace and line ending
@@ -109,6 +114,8 @@ void ftpServer_pwd(int sock_control, int sock_data);
  * Handles case of null or invalid filename
  */
 void ftserve_retr(int sock_control, int sock_data, char *filename);
+
+void private_retr(int sock_control, int sock_data, char *filename);
 
 int recvFile(int sock_control, int sock_data, char *filename);
 

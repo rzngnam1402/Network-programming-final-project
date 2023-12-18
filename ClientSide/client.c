@@ -50,7 +50,7 @@ int main(int argc, char const *argv[])
 	int choice = login_menu();
 	if (choice == 2) // sign up
 	{
-		signup(sock_control);
+		signup();
 	}
 	else if (choice != 1) // exit
 	{
@@ -222,6 +222,27 @@ int main(int argc, char const *argv[])
 						ftclient_get(data_sock, sock_control, filenames[i]);
 						print_reply(read_reply(sock_control));
 					}
+				}
+				else if (strcmp(cmd.code, "PGET") == 0)
+				{
+					if (read_reply(sock_control) == 550)
+					{
+						print_reply(550);
+						close(data_sock);
+						continue;
+					}
+					clock_t start = clock();
+					ftclient_private_get(data_sock, sock_control, cmd.arg);
+					clock_t end = clock();
+					double cpu_time = ((double)(end - start)) / CLOCKS_PER_SEC;
+					print_reply(read_reply(sock_control));
+					printf("Time taken %lf\n", cpu_time);
+				}
+				else if (strcmp(cmd.code, "PPUT") == 0)
+				{
+					printf("Uploading ...\n");
+					private_upload(data_sock, cmd.arg, sock_control);
+					printf("Done!\n");
 				}
 				else if (strcmp(cmd.code, "STOR") == 0)
 				{
