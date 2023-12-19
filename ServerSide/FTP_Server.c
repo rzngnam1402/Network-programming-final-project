@@ -21,6 +21,111 @@ void trimstr(char *str, int n)
 	}
 }
 
+int check_private_key(char *input_username, char *user_key)
+{
+	const char *filename = "./auth/privatekey.txt";
+	char *pch;
+	char buf[MAX_SIZE];
+	char private_key[MAX_SIZE];
+	char username[MAX_SIZE];
+	char *line = NULL;
+	FILE *file = fopen(filename, "r");
+	if (file == NULL)
+	{
+		perror("Error opening file");
+		return 0;
+	}
+	size_t num_read;
+	size_t len = 0;
+	while ((num_read = getline(&line, &len, file)) != -1)
+	{
+		memset(buf, 0, MAX_SIZE);
+		strcpy(buf, line);
+		pch = strtok(buf, " ");
+		strcpy(username, pch);
+
+		if (pch != NULL)
+		{
+			pch = strtok(NULL, " ");
+			strcpy(private_key, pch);
+		}
+
+		// remove end of line and whitespace
+		for (int i = 0; i < (int)strlen(private_key); i++)
+		{
+			if (isspace(private_key[i]))
+				private_key[i] = 0;
+			if (private_key[i] == '\n')
+				private_key[i] = 0;
+		}
+
+		if ((strcmp(username, input_username) == 0) && (strcmp(private_key, user_key) == 0))
+		{
+			return 1;
+		}
+	}
+	fclose(file);
+	return 0;
+}
+
+int isDirectoryExists(const char *path)
+{
+	struct stat stats;
+
+	stat(path, &stats);
+
+	// Check for file existence
+	if (S_ISDIR(stats.st_mode))
+		return 1;
+
+	return 0;
+}
+
+void trimSpaces(char *str)
+{
+	int i, j = 0;
+	int n = strlen(str);
+
+	// Leading spaces
+	while (isspace((unsigned char)str[j]) && j < n)
+	{
+		j++;
+	}
+	for (i = 0; j < n; j++)
+	{
+		// Copy non-space characters
+		if (!isspace((unsigned char)str[j]) || (j < n - 1 && !isspace((unsigned char)str[j + 1])))
+		{
+			str[i++] = str[j];
+		}
+	}
+	// Remove trailing space
+	if (i > 0 && isspace((unsigned char)str[i - 1]))
+	{
+		i--;
+	}
+	str[i] = '\0'; // Null terminate the modified string
+}
+
+void make_folder(char username[MAX_SIZE])
+{
+	strcpy(current_username, username);
+	char command[MAX_SIZE];
+	char folder_name[MAX_SIZE];
+	strcpy(folder_name, "./data/");
+	strcat(folder_name, current_username);
+	strcpy(command, "mkdir ");
+	strcat(command, folder_name);
+	if (isDirectoryExists(folder_name))
+	{
+		printf("%s's folder exists\n", current_username);
+	}
+	else
+	{
+		// create new directory for user
+		system(command);
+	}
+}
 /**
  * Function to split arg
  * eg input="name1 name2" into str1="name1",str2="name2"
@@ -331,7 +436,7 @@ int ftserve_check_user(char *user, char *pass)
 	FILE *fd;
 	int auth = 0;
 
-	fd = fopen(".auth", "r");
+	fd = fopen("./auth/.auth", "r");
 	if (fd == NULL)
 	{
 		perror("file not found");
@@ -358,6 +463,7 @@ int ftserve_check_user(char *user, char *pass)
 		if ((strcmp(user, username) == 0) && (strcmp(pass, password) == 0))
 		{
 			auth = 1;
+			make_folder(username);
 			break;
 		}
 	}
@@ -437,7 +543,8 @@ int ftserve_recv_cmd(int sock_control, char *cmd, char *arg)
 			 (strcmp(cmd, "FOLD") == 0) || (strcmp(cmd, "STOU") == 0) ||
 			 (strcmp(cmd, "MRET") == 0) || (strcmp(cmd, "FIND") == 0) ||
 			 (strcmp(cmd, "MKDR") == 0) || (strcmp(cmd, "RENM") == 0) ||
-			 (strcmp(cmd, "DEL ") == 0) || (strcmp(cmd, "CPY ") == 0))
+			 (strcmp(cmd, "DEL ") == 0) || (strcmp(cmd, "CPY ") == 0) ||
+			 (strcmp(cmd, "PPUT") == 0) || (strcmp(cmd, "PGET") == 0))
 	{
 		rc = 200;
 	}
@@ -524,6 +631,7 @@ int ftserve_list(int sock_data, int sock_control)
 	memset(msgToClient, 0, MAX_SIZE);
 
 	getcwd(curr_dir, sizeof(curr_dir));
+	strcat(curr_dir, "/data");
 	int n = scandir(curr_dir, &output, NULL, NULL);
 	if (n > 0)
 	{
@@ -558,7 +666,7 @@ int ftserve_list_sorted(int sock_data, int sock_control)
 
 	char curr_dir[MAX_SIZE];
 	getcwd(curr_dir, sizeof(curr_dir));
-
+	strcat(curr_dir, "/data");
 	int n = scandir(curr_dir, &output, NULL, compare);
 
 	if (n > 0)
@@ -672,9 +780,11 @@ void ftserve_retr(int sock_control, int sock_data, char *filename)
 	char data[MAX_SIZE];
 	memset(data, 0, MAX_SIZE);
 	size_t num_read;
+	char dest[MAX_SIZE];
+	strcpy(dest, "./data/");
 
-	fd = fopen(filename, "r");
-
+	strcat(dest, filename);
+	fd = fopen(dest, "r");
 	if (!fd)
 	{
 		// send error code (550 Requested action not taken)
@@ -685,6 +795,82 @@ void ftserve_retr(int sock_control, int sock_data, char *filename)
 		// send okay (150 File status okay)
 		send_response(sock_control, 150);
 
+		do
+		{
+			num_read = fread(data, 1, MAX_SIZE, fd);
+
+			if (num_read < 0)
+			{
+				printf("error in fread()\n");
+			}
+
+			// send block
+			if (send(sock_data, data, num_read, 0) < 0)
+				perror("error sending file\n");
+
+		} while (num_read > 0);
+
+		// send message: 226: closing conn, file transfer successful
+		send_response(sock_control, 226);
+
+		fclose(fd);
+	}
+}
+
+void private_retr(int sock_control, int sock_data, char *arg)
+{
+	FILE *fd = NULL;
+	char data[MAX_SIZE];
+	char username[MAX_SIZE];
+	char filename[MAX_SIZE];
+	char buffer[MAX_SIZE];
+	char dest[MAX_SIZE];
+	char private_key[MAX_SIZE];
+	memset(data, 0, MAX_SIZE);
+	size_t num_read;
+
+	int count, i;
+	char filenames[MAX_FILES][MAX_FILENAME_LEN];
+	separate_filenames(arg, filenames, &count);
+	printf("user: %s\nfile: %s\n", filenames[0], filenames[1]);
+	strcpy(username, filenames[0]);
+	strcpy(filename, filenames[1]);
+
+	strcpy(dest, "./data/");
+	strcat(dest, username);
+	strcat(dest, "/");
+	strcat(dest, filename);
+	fd = fopen(dest, "r");
+	printf(" file: %s\n", dest);
+	if (!fd)
+	{
+		// send error code (550 Requested action not taken)
+		send_response(sock_control, 550);
+	}
+	else
+	{
+		// send okay (150 File status okay)
+		send_response(sock_control, 150);
+		// receive key from client
+		if ((recv_data(sock_control, buffer, sizeof(buffer))) == -1)
+		{
+			perror("recv error\n");
+			exit(1);
+		}
+		strcpy(private_key, buffer);
+		printf("Private key received: %s\n", private_key);
+		if (check_private_key(username, private_key))
+		{
+			printf("Private key correct\n");
+			send_response(sock_control, 200);
+		}
+		else
+		{
+			printf("Private key incorrect\n");
+			send_response(sock_control, 500); // key incorrect
+			send_response(sock_control, 502); // get file failed
+			return;
+		}
 		do
 		{
 			num_read = fread(data, 1, MAX_SIZE, fd);
@@ -750,6 +936,46 @@ int recvMulti(int sock_control, int sock_data, char *arg)
 	for (i = 0; i < count; i++)
 	{
 		recvFile(sock_control, sock_data, filenames[i]);
+	}
+	return 0;
+}
+
+/*
+ * Receive private file
+ */
+
+int private_recv(int sock_control, int sock_data, char *filename)
+{
+	trimSpaces(filename);
+	char data[MAX_SIZE];
+	int size, stt = 0;
+	recv(sock_control, &stt, sizeof(stt), 0);
+	char dest[255] = "./data/";
+	strcat(dest, current_username);
+	strcat(dest, "/");
+	strcat(dest, filename);
+
+	if (stt == 550)
+	{
+		printf("can't not open file!\n");
+		return -1;
+	}
+	else
+	{
+		FILE *fd = fopen(dest, "w");
+
+		while ((size = recv(sock_data, data, MAX_SIZE, 0)) > 0)
+		{
+			fwrite(data, 1, size, fd);
+		}
+
+		if (size < 0)
+		{
+			perror("error\n");
+		}
+
+		fclose(fd);
+		return 0;
 	}
 	return 0;
 }
@@ -1152,6 +1378,10 @@ void ftserve_process(int sock_control)
 			{ // RETRIEVE: get file
 				ftserve_retr(sock_control, sock_data, arg);
 			}
+			else if (strcmp(cmd, "PGET") == 0)
+			{ // RETRIEVE: get file
+				private_retr(sock_control, sock_data, arg);
+			}
 			else if (strcmp(cmd, "FIND") == 0)
 			{ // find file
 				ftserve_find(sock_control, sock_data, arg);
@@ -1175,6 +1405,11 @@ void ftserve_process(int sock_control)
 			{
 				printf("Receiving...\n");
 				recvMulti(sock_control, sock_data, arg);
+			}
+			else if (strcmp(cmd, "PPUT") == 0)
+			{
+				printf("Receiving...\n");
+				private_recv(sock_control, sock_data, arg);
 			}
 			else if (strcmp(cmd, "RENM") == 0)
 			{ // rename file and folder

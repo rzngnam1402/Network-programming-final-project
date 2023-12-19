@@ -30,6 +30,35 @@ int validate_ip(const char *ip)
 	}
 }
 
+void trimSpaces(char *str)
+{
+	int i, j = 0;
+	int n = strlen(str);
+
+	// Leading spaces
+	while (isspace((unsigned char)str[j]) && j < n)
+	{
+		j++;
+	}
+
+	for (i = 0; j < n; j++)
+	{
+		// Copy non-space characters
+		if (!isspace((unsigned char)str[j]) || (j < n - 1 && !isspace((unsigned char)str[j + 1])))
+		{
+			str[i++] = str[j];
+		}
+	}
+
+	// Remove trailing space
+	if (i > 0 && isspace((unsigned char)str[i - 1]))
+	{
+		i--;
+	}
+
+	str[i] = '\0'; // Null terminate the modified string
+}
+
 /**
  * Print response message
  */
@@ -54,6 +83,9 @@ void print_reply(int rc)
 		break;
 	case 550:
 		printf("550 Requested action not taken. File unavailable.\n");
+		break;
+	case 502:
+		printf("502 Private key incorrect. Command not implemented.\n");
 		break;
 	}
 }
@@ -136,6 +168,68 @@ void read_input(char *user_input, int size)
 		user_input[n - 1] = '\0';
 }
 
+void create_sharing_key(char *username)
+{
+	const char *filename = "../ServerSide/auth/privatekey.txt";
+	char private_key[MAX_SIZE];
+	FILE *file = fopen(filename, "r");
+	if (file == NULL)
+	{
+		perror("Error opening file");
+		return;
+	}
+	char *pch;
+	char buf[MAX_SIZE];
+	char *line = NULL;
+	size_t num_read;
+	size_t len = 0;
+	while ((num_read = getline(&line, &len, file)) != -1)
+	{
+		memset(buf, 0, MAX_SIZE);
+		strcpy(buf, line);
+
+		pch = strtok(buf, " ");
+		strcpy(username, pch);
+
+		if (pch != NULL)
+		{
+			pch = strtok(NULL, " ");
+			strcpy(private_key, pch);
+		}
+
+		// remove end of line and whitespace
+		for (int i = 0; i < (int)strlen(private_key); i++)
+		{
+			if (isspace(private_key[i]))
+				private_key[i] = 0;
+			if (private_key[i] == '\n')
+				private_key[i] = 0;
+		}
+
+		if ((strcmp(current_username, username) == 0))
+		{
+			// private key is already existed
+			return;
+		}
+	}
+	fclose(file);
+	printf("But first, create a private sharing key!\n");
+	printf("Your private key: ");
+	scanf("%s", private_key);
+
+	file = fopen(filename, "a");
+	if (file == NULL)
+	{
+		perror("Error opening file");
+		return;
+	}
+
+	// Write the account and password to the file
+	fprintf(file, "%s %s\n", current_username, private_key);
+	printf("Your private key has been registered successfully!\n\n");
+	fclose(file);
+}
+
 void change_password(char *username, char *old_password)
 {
 	fflush(stdin);
@@ -145,14 +239,15 @@ void change_password(char *username, char *old_password)
 	scanf("%c", &choice);
 	if (choice == 'n')
 	{
-		printf("Welcome to the application!\n");
+		printf("--------------------------------");
+		printf("\nWelcome to the application!\n");
 		printf("Enter your command to use the app.\nFor example: ftp> ls\n\n");
 
 		return;
 	}
 	Account creds[10];
 	char new_password[MAX_SIZE];
-	const char *filename = "../ServerSide/.auth";
+	const char *filename = "../ServerSide/auth/.auth";
 	printf("Enter new password: ");
 	scanf("%s", new_password);
 	fflush(stdin);
@@ -218,6 +313,7 @@ void ftclient_login(int sock_control)
 	// Send USER command to server
 	strcpy(cmd.code, "USER");
 	strcpy(cmd.arg, user);
+	strcpy(current_username, user);
 	ftclient_send_cmd(&cmd, sock_control);
 
 	// Wait for go-ahead to send password
@@ -243,6 +339,7 @@ void ftclient_login(int sock_control)
 	case 230:
 		printf("230 Successful login.\n\n");
 		change_password(user, pass);
+		create_sharing_key(user);
 		break;
 	default:
 		perror("error reading message from server");
@@ -317,14 +414,14 @@ int ftclient_read_command(char *user_input, int size, struct command *cstruct)
 		memset(user_input, 0, MAX_SIZE);
 		sprintf(user_input, "%s %s", cstruct->code, cstruct->arg);
 	}
-	else if (strncmp(user_input, "cd ", 3) == 0)
-	{
-		strcpy(cstruct->code, "CWD ");
-		strcpy(cstruct->arg, user_input + 3);
+	// else if (strncmp(user_input, "cd ", 3) == 0)
+	// {
+	// 	strcpy(cstruct->code, "CWD ");
+	// 	strcpy(cstruct->arg, user_input + 3);
 
-		memset(user_input, 0, MAX_SIZE);
-		sprintf(user_input, "%s %s", cstruct->code, cstruct->arg);
-	}
+	// 	memset(user_input, 0, MAX_SIZE);
+	// 	sprintf(user_input, "%s %s", cstruct->code, cstruct->arg);
+	// }
 	else if (strncmp(user_input, "find ", 5) == 0)
 	{
 		strcpy(cstruct->code, "FIND");
@@ -364,6 +461,14 @@ int ftclient_read_command(char *user_input, int size, struct command *cstruct)
 		memset(user_input, 0, MAX_SIZE);
 		sprintf(user_input, "%s %s", cstruct->code, cstruct->arg);
 	}
+	else if (strncmp(user_input, "pget", 4) == 0)
+	{
+		strcpy(cstruct->code, "PGET");
+		strcpy(cstruct->arg, user_input + 4);
+
+		memset(user_input, 0, MAX_SIZE);
+		sprintf(user_input, "%s %s", cstruct->code, cstruct->arg);
+	}
 	else if (strncmp(user_input, "put ", 4) == 0)
 	{
 		strcpy(cstruct->code, "STOR"); // STORE
@@ -375,6 +480,14 @@ int ftclient_read_command(char *user_input, int size, struct command *cstruct)
 	else if (strncmp(user_input, "mput ", 4) == 0)
 	{
 		strcpy(cstruct->code, "STOU"); // STORE multiple files
+		strcpy(cstruct->arg, user_input + 4);
+
+		memset(user_input, 0, MAX_SIZE);
+		sprintf(user_input, "%s %s", cstruct->code, cstruct->arg);
+	}
+	else if (strncmp(user_input, "pput ", 4) == 0)
+	{
+		strcpy(cstruct->code, "PPUT");
 		strcpy(cstruct->arg, user_input + 4);
 
 		memset(user_input, 0, MAX_SIZE);
@@ -588,6 +701,29 @@ int ftclient_get(int data_sock, int sock_control, char *arg)
 	return 0;
 }
 
+int ftclient_private_get(int data_sock, int sock_control, char *arg)
+{
+	char private_key[MAX_SIZE];
+	printf("Enter private key to access this folder!\n");
+	printf("Private key: ");
+	scanf("%s", private_key);
+
+	// send private key for server to check
+	int rc = send(sock_control, private_key, (int)strlen(private_key), 0);
+	if (rc < 0)
+	{
+		perror("Error sending command to server");
+		return -1;
+	}
+
+	rc = read_reply(sock_control);
+	if (rc == 200)
+	{
+		ftclient_get(data_sock, sock_control, arg);
+	}
+	return 0;
+}
+
 void upload(int data_sock, char *filename, int sock_control)
 {
 
@@ -603,6 +739,48 @@ void upload(int data_sock, char *filename, int sock_control)
 	{
 		// send error code (550 Requested action not taken)
 		printf("ko the mo file\n");
+		stt = 550;
+		send(sock_control, &stt, sizeof(stt), 0);
+	}
+	else
+	{
+		// send okay (150 File status okay)
+		stt = 150;
+		send(sock_control, &stt, sizeof(stt), 0);
+
+		do
+		{
+			num_read = fread(data, 1, MAX_SIZE, fd);
+
+			if (num_read < 0)
+			{
+				printf("error in fread()\n");
+			}
+
+			// send block
+			send(data_sock, data, num_read, 0);
+
+		} while (num_read > 0);
+
+		fclose(fd);
+	}
+}
+
+void private_upload(int data_sock, char *filename, int sock_control)
+{
+	trimSpaces(filename);
+	FILE *fd = NULL;
+	char data[MAX_SIZE];
+	memset(data, 0, MAX_SIZE);
+	size_t num_read;
+	int stt;
+
+	fd = fopen(filename, "r");
+
+	if (!fd)
+	{
+		// send error code (550 Requested action not taken)
+		printf("Cannot open file\n");
 		stt = 550;
 		send(sock_control, &stt, sizeof(stt), 0);
 	}
@@ -663,8 +841,8 @@ int signup()
 	printf("Register new account\n");
 	char username[MAX_USERNAME_LENGTH];
 	char password[MAX_PASSWORD_LENGTH];
-	// fflush(stdin);
-	scanf("\n");
+	fflush(stdin);
+	// scanf("\n");
 	printf("Enter username: ");
 	scanf("%s", username);
 	if (strlen(username) == 0)
@@ -679,7 +857,7 @@ int signup()
 		return -1;
 	}
 
-	FILE *file = fopen("../ServerSide/.auth", "a");
+	FILE *file = fopen("../ServerSide/auth/.auth", "a");
 	if (file == NULL)
 	{
 		perror("Error opening file");
