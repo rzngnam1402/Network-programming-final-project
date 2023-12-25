@@ -43,7 +43,6 @@ int main(int argc, char const *argv[])
 		printf("Error...\n");
 		exit(1);
 	}
-
 	// Get connection, welcome messages
 	printf("Connected to %s\n", argv[1]);
 	print_reply(read_reply(sock_control));
@@ -108,6 +107,10 @@ int main(int argc, char const *argv[])
 				if (strcmp(cmd.code, "LIST") == 0)
 				{
 					ftclient_list(data_sock, sock_control);
+				}
+				else if (strcmp(cmd.code, "HELP") == 0)
+				{
+					ftclient_help(data_sock, sock_control);
 				}
 				else if (strcmp(cmd.code, "SORT") == 0)
 				{

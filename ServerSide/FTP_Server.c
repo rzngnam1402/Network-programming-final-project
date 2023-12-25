@@ -544,7 +544,8 @@ int ftserve_recv_cmd(int sock_control, char *cmd, char *arg)
 			 (strcmp(cmd, "MRET") == 0) || (strcmp(cmd, "FIND") == 0) ||
 			 (strcmp(cmd, "MKDR") == 0) || (strcmp(cmd, "RENM") == 0) ||
 			 (strcmp(cmd, "DEL ") == 0) || (strcmp(cmd, "CPY ") == 0) ||
-			 (strcmp(cmd, "PPUT") == 0) || (strcmp(cmd, "PGET") == 0))
+			 (strcmp(cmd, "PPUT") == 0) || (strcmp(cmd, "PGET") == 0) ||
+			 (strcmp(cmd, "HELP") == 0))
 	{
 		rc = 200;
 	}

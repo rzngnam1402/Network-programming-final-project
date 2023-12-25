@@ -67,7 +67,7 @@ void print_reply(int rc)
 	switch (rc)
 	{
 	case 220:
-		printf("220 Welcome, FTP server ready.\n");
+		printf("220 Welcome, FTP server ready.\n\n");
 		break;
 	case 221:
 		printf("221 Goodbye!\n");
@@ -241,7 +241,7 @@ void change_password(char *username, char *old_password)
 	{
 		printf("--------------------------------");
 		printf("\nWelcome to the application!\n");
-		printf("Enter your command to use the app.\nFor example: ftp> ls\n\n");
+		printf("Enter your command to use the app.\nFor example: %s>help\n\n", current_username);
 
 		return;
 	}
@@ -286,7 +286,7 @@ void change_password(char *username, char *old_password)
 			fclose(fp);
 			printf("Changed password successfully!\n");
 			printf("Welcome to the application!\n");
-			printf("Enter your command to use the app.\nFor example: ftp> ls\n\n");
+			printf("Enter your command to use the app.\nFor example: %s>help\n\n", current_username);
 			return;
 		}
 	}
@@ -357,7 +357,7 @@ int ftclient_read_command(char *user_input, int size, struct command *cstruct)
 	memset(cstruct->code, 0, sizeof(cstruct->code));
 	memset(cstruct->arg, 0, sizeof(cstruct->arg));
 
-	printf("ftp> "); // prompt for input
+	printf("%s> ", current_username); // prompt for input
 	fflush(stdout);
 
 	// wait for user to enter a command
@@ -403,6 +403,12 @@ int ftclient_read_command(char *user_input, int size, struct command *cstruct)
 	else if (strcmp(user_input, "fold ") == 0 || strcmp(user_input, "fold") == 0)
 	{
 		strcpy(cstruct->code, "FOLD");
+		memset(user_input, 0, MAX_SIZE);
+		strcpy(user_input, cstruct->code);
+	}
+	else if (strcmp(user_input, "help ") == 0 || strcmp(user_input, "help") == 0)
+	{
+		strcpy(cstruct->code, "HELP");
 		memset(user_input, 0, MAX_SIZE);
 		strcpy(user_input, cstruct->code);
 	}
@@ -738,7 +744,7 @@ void upload(int data_sock, char *filename, int sock_control)
 	if (!fd)
 	{
 		// send error code (550 Requested action not taken)
-		printf("ko the mo file\n");
+		printf("Cannot open file\n");
 		stt = 550;
 		send(sock_control, &stt, sizeof(stt), 0);
 	}
@@ -818,6 +824,31 @@ int ftclient_send_multiple(int data_sock, char *filename, int sock_control)
 		upload(data_sock, filenames[i], sock_control);
 	}
 	return 0;
+}
+
+void ftclient_help(int data_sock, int sock_control)
+{
+	printf("Client side commands:\n");
+	printf("\t1.  !ls\t\t\t\tList directory\n");
+	printf("\t2.  !pwd\t\t\tShow current working directory\n");
+	printf("\t3.  !cd <path>\t\t\tChange directory <path>\n\n");
+	printf("Application commands:\n");
+	printf("\t1.  ls\t\t\t\tList directory\n");
+	printf("\t2.  pwd\t\t\t\tShow current working directory\n");
+	printf("\t3.  sort\t\t\tUpload client's current directory\n");
+	printf("\t4.  renm  <path1> <path2>\tRename <path1> to <path2>\n");
+	printf("\t5.  find  <filename>\t\tFind <filename> in directory\n");
+	printf("\t6.  mkdir <name>\t\tMake new directory\n");
+	printf("\t7.  get   <filename>\t\tDownload from server\n");
+	printf("\t8.  mget  <filenames..>\t\tDownload multiple files from server\n");
+	printf("\t9.  pget  <filename>\t\tDownload from private folder\n");
+	printf("\t10. put   <filename>\t\tUpload file to server\n");
+	printf("\t11. mput  <filenames..>\t\tUpload multiple files to server\n");
+	printf("\t12. pput  <filename>\t\tUpload file to private folder\n");
+	printf("\t13. del   <filename>\t\tDelete file from server\n");
+	printf("\t14. cpy   <filename>\t\tCopy files/directories\n");
+	printf("\t15. quit\t\t\tQuit program\n");
+	return;
 }
 
 int login_menu()

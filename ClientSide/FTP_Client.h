@@ -134,6 +134,11 @@ int ftclient_send_multiple(int data_sock, char *filename, int sock_control);
  */
 void private_upload(int data_sock, char *filename, int sock_control);
 
+/*
+ * Helper function
+ */
+void ftclient_help(int sock_data, int sock_control);
+
 int login_menu();
 int signup();
 
