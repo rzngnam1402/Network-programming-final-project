@@ -106,6 +106,7 @@ int main(int argc, char const *argv[])
 				// execute command
 				if (strcmp(cmd.code, "LIST") == 0)
 				{
+					runProgressBar(1);
 					ftclient_list(data_sock, sock_control);
 				}
 				else if (strcmp(cmd.code, "HELP") == 0)
@@ -114,15 +115,18 @@ int main(int argc, char const *argv[])
 				}
 				else if (strcmp(cmd.code, "SORT") == 0)
 				{
+					runProgressBar(1);
 					ftclient_list(data_sock, sock_control);
 				}
 				else if (strcmp(cmd.code, "FOLD") == 0)
 				{
+					runProgressBar(1);
 					ftclient_zip(data_sock, sock_control);
 				}
 				else if (strcmp(cmd.code, "STOU") == 0)
 				{
 					printf("Uploading...");
+					runProgressBar(1);
 					ftclient_send_multiple(data_sock, cmd.arg, sock_control);
 					printf("Done!\n");
 				}
@@ -130,49 +134,85 @@ int main(int argc, char const *argv[])
 				{
 					int repl = read_reply(sock_control);
 					if (repl == 253)
+					{
+						runProgressBar(1);
 						printf("253 Copied successfully\n");
+					}
 					else if (repl == 454)
+					{
+						runProgressBar(0);
 						printf("454 Copy failure\n");
+					}
 					else if (repl == 455)
+					{
+						runProgressBar(0);
 						printf("455 Syntax error (COPY<filepath> <newfilepath>)\n");
+					}
 				}
 				else if (strcmp(cmd.code, "FIND") == 0)
 				{
 					int repl = read_reply(sock_control);
 					if (repl == 241)
 					{
+						runProgressBar(1);
 						int nums = read_reply(sock_control);
 						for (int i = 0; i < nums; ++i)
 							ftclient_list(data_sock, sock_control); // ham nay in mess tu server
 					}
 					else if (repl == 441)
+					{
+						runProgressBar(0);
 						printf("441 File not found!\n");
+					}
 				}
 				else if (strcmp(cmd.code, "MKDR") == 0)
 				{
 					int repl = read_reply(sock_control);
 					if (repl == 254)
+					{
+						runProgressBar(1);
 						printf("254 Mkdir successfully\n");
+					}
+
 					else if (repl == 456)
+					{
+						runProgressBar(0);
 						printf("451 Mkdir failure\n");
+					}
 				}
 				else if (strcmp(cmd.code, "CPY ") == 0)
 				{
 					int repl = read_reply(sock_control);
 					if (repl == 253)
+					{
+						runProgressBar(1);
 						printf("253 Copied successfully\n");
+					}
 					else if (repl == 454)
+					{
+						runProgressBar(0);
 						printf("454 Copy failure\n");
+					}
+
 					else if (repl == 455)
+					{
+						runProgressBar(0);
 						printf("455 Syntax error (cpy <filepath> <newfilepath>)\n");
+					}
 				}
 				else if (strcmp(cmd.code, "DEL ") == 0)
 				{
 					int repl = read_reply(sock_control);
 					if (repl == 252)
+					{
+						runProgressBar(1);
 						printf("252 Delete successfully\n");
+					}
 					else if (repl == 453)
+					{
+						runProgressBar(0);
 						printf("451 Delete failure\n");
+					}
 				}
 
 				else if (strcmp(cmd.code, "CWD ") == 0)
@@ -190,6 +230,7 @@ int main(int argc, char const *argv[])
 				{
 					if (read_reply(sock_control) == 212)
 					{
+						runProgressBar(1);
 						ftclient_list(data_sock, sock_control); // ham nay in mess tu server
 					}
 				}
@@ -198,10 +239,12 @@ int main(int argc, char const *argv[])
 					// wait for reply (is file valid)
 					if (read_reply(sock_control) == 550)
 					{
+						runProgressBar(0);
 						print_reply(550);
 						close(data_sock);
 						continue;
 					}
+					runProgressBar(1);
 					clock_t start = clock();
 					ftclient_get(data_sock, sock_control, cmd.arg);
 					clock_t end = clock();
@@ -211,6 +254,7 @@ int main(int argc, char const *argv[])
 				}
 				else if (strcmp(cmd.code, "MRET") == 0)
 				{
+					runProgressBar(1);
 					int count, i;
 					char filenames[MAX_FILES][MAX_FILENAME_LEN];
 					separate_filenames(cmd.arg, filenames, &count);
@@ -230,10 +274,12 @@ int main(int argc, char const *argv[])
 				{
 					if (read_reply(sock_control) == 550)
 					{
+						runProgressBar(0);
 						print_reply(550);
 						close(data_sock);
 						continue;
 					}
+					runProgressBar(1);
 					clock_t start = clock();
 					ftclient_private_get(data_sock, sock_control, cmd.arg);
 					clock_t end = clock();
@@ -243,12 +289,14 @@ int main(int argc, char const *argv[])
 				}
 				else if (strcmp(cmd.code, "PPUT") == 0)
 				{
+					runProgressBar(1);
 					printf("Uploading ...\n");
 					private_upload(data_sock, cmd.arg, sock_control);
 					printf("Done!\n");
 				}
 				else if (strcmp(cmd.code, "STOR") == 0)
 				{
+					runProgressBar(1);
 					printf("Uploading ...\n");
 					upload(data_sock, cmd.arg, sock_control);
 					printf("Done!\n");

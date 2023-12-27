@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 #include <ctype.h>
 #include <time.h>
+#include <unistd.h>
 
 #define INVALID_SOCKET -1
 #define INVALID_IP -1

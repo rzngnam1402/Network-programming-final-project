@@ -35,7 +35,6 @@ void trimSpaces(char *str)
 	int i, j = 0;
 	int n = strlen(str);
 
-	// Leading spaces
 	while (isspace((unsigned char)str[j]) && j < n)
 	{
 		j++;
@@ -43,20 +42,18 @@ void trimSpaces(char *str)
 
 	for (i = 0; j < n; j++)
 	{
-		// Copy non-space characters
 		if (!isspace((unsigned char)str[j]) || (j < n - 1 && !isspace((unsigned char)str[j + 1])))
 		{
 			str[i++] = str[j];
 		}
 	}
 
-	// Remove trailing space
 	if (i > 0 && isspace((unsigned char)str[i - 1]))
 	{
 		i--;
 	}
 
-	str[i] = '\0'; // Null terminate the modified string
+	str[i] = '\0';
 }
 
 /**
@@ -348,6 +345,39 @@ void ftclient_login(int sock_control)
 	}
 }
 
+void runProgressBar(int status)
+{
+	const int total = 100;
+	int progress;
+	for (progress = 0; progress <= total; progress++)
+	{
+		printf("\r\033[0;36mProcessing: ");
+		printf("[");
+		int pos = 50 * progress / total;
+		for (int i = 0; i < 50; i++)
+		{
+			if (i < pos)
+				printf("\033[0;36m=");
+			else if (i == pos)
+				printf("\033[0;33m>");
+			else
+				printf("\033[0;31m ");
+		}
+		printf("\033[0;36m] \033[0;36m%d%%\033[0m", progress);
+		fflush(stdout);
+		usleep(20000);
+	}
+
+	printf("\n");
+
+	if (status == 0)
+		printf("\033[0;31mError occurred.\033[0m\n");
+	else if (status == 1)
+		printf("\033[0;32mTask completed successfull.\033[0m\n");
+
+	printf("\n");
+}
+
 /**
  * Parse command in cstruct
  */
@@ -617,6 +647,41 @@ int ftclient_open_conn(int sock_con)
 /**
  * Do list commmand
  */
+void printTree(const char *path)
+{
+	const char *token = path;
+	int level = 0;
+
+	while (*token != '\0')
+	{
+		// Find the next occurrence of '/'
+		const char *nextSlash = strchr(token, '/');
+		if (nextSlash == NULL)
+		{
+			// No more '/' found, print the rest of the path
+			for (int i = 0; i < level; i++)
+			{
+				printf("|   ");
+			}
+			printf("|-- %s\n", token);
+			break;
+		}
+		else
+		{
+			// Print the current part of the path up to the next '/'
+			for (int i = 0; i < level; i++)
+			{
+				printf("|   ");
+			}
+			printf("|-- %.*s\n", (int)(nextSlash - token), token);
+
+			// Move to the next part of the path
+			token = nextSlash + 1;
+			level++;
+		}
+	}
+}
+
 int ftclient_list(int sock_data, int sock_ctrl)
 {
 	size_t num_recvd;	// number of bytes received with recv()
@@ -626,7 +691,7 @@ int ftclient_list(int sock_data, int sock_ctrl)
 	memset(buf, 0, sizeof(buf));
 	while ((num_recvd = recv(sock_data, buf, MAX_SIZE, 0)) > 0)
 	{
-		printf("%s", buf);
+		printTree(buf);
 		memset(buf, 0, sizeof(buf));
 	}
 

@@ -624,34 +624,83 @@ int ftserve_start_data_conn(int sock_control)
  * over data connection
  * Return -1 on error, 0 on success
  */
+void list_files(const char *path, int depth, int is_last, int sock_data);
+
 int ftserve_list(int sock_data, int sock_control)
 {
-	struct dirent **output = NULL;
-	char curr_dir[MAX_SIZE], msgToClient[MAX_SIZE];
+	char curr_dir[MAX_SIZE];
 	memset(curr_dir, 0, MAX_SIZE);
-	memset(msgToClient, 0, MAX_SIZE);
 
 	getcwd(curr_dir, sizeof(curr_dir));
 	strcat(curr_dir, "/data");
-	int n = scandir(curr_dir, &output, NULL, NULL);
-	if (n > 0)
-	{
-		for (int i = 0; i < n; i++)
-		{
-			if (strcmp(output[i]->d_name, ".") != 0 && strcmp(output[i]->d_name, "..") != 0)
-			{
-				strcat(msgToClient, output[i]->d_name);
-				strcat(msgToClient, "  ");
-			}
-		}
-	}
-	strcat(msgToClient, "\n");
-	if (send(sock_data, msgToClient, strlen(msgToClient), 0) < 0)
-	{
-		perror("error");
-	}
+
+	list_files(curr_dir, 0, 1, sock_data); // Start with depth 0 and is_last = 1 (true) for the root directory
 
 	return 0;
+}
+
+void list_files(const char *path, int depth, int is_last, int sock_data)
+{
+	DIR *dir;
+	struct dirent **output;
+	int n;
+
+	if (!(dir = opendir(path)))
+		return;
+
+	n = scandir(path, &output, NULL, alphasort);
+	if (n < 0)
+	{
+		perror("scandir");
+		return;
+	}
+
+	while (n--)
+	{
+		if (strcmp(output[n]->d_name, ".") == 0 || strcmp(output[n]->d_name, "..") == 0)
+			continue;
+
+		// Print directory or file name with proper indentation
+		for (int i = 0; i < depth; i++)
+		{
+			if (i == depth - 1)
+			{
+				if (is_last)
+					send(sock_data, "    ", 4, 0);
+				else
+					send(sock_data, "|   ", 4, 0);
+			}
+			else
+			{
+				if (is_last)
+					send(sock_data, "    ", 4, 0);
+				else
+					send(sock_data, "|   ", 4, 0);
+			}
+		}
+		if (output[n]->d_type == DT_DIR)
+		{
+			send(sock_data, "|-- ", 4, 0);
+			send(sock_data, output[n]->d_name, strlen(output[n]->d_name), 0);
+			send(sock_data, "/\n", 2, 0);
+
+			// Prepare next path for recursion
+			char next_path[MAX_SIZE];
+			snprintf(next_path, sizeof(next_path), "%s/%s", path, output[n]->d_name);
+
+			// Recursively list files in the subdirectory
+			list_files(next_path, depth + 1, n == 0, sock_data); // n == 0 means it's the last entry in the current directory
+		}
+		else
+		{
+			send(sock_data, "|-- ", 4, 0);
+			send(sock_data, output[n]->d_name, strlen(output[n]->d_name), 0);
+			send(sock_data, "\n", 1, 0);
+		}
+		free(output[n]);
+	}
+	free(output);
+	closedir(dir);
 }
 
 int compare(const struct dirent **a, const struct dirent **b)
@@ -1074,6 +1123,7 @@ SearchResult searchInDirectory(char *dirPath, char *fileName)
  * over data connection
  * Return -1 on error, 0 on success
  */
+
 void ftserve_find(int sock_control, int sock_data, char *filename)
 {
 	char curr_dir[MAX_SIZE - 2];
