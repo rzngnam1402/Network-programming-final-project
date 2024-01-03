@@ -1,4 +1,6 @@
+
 #include "FTP_Server.h"
+
 // result of search file
 typedef struct
 {
@@ -107,8 +109,11 @@ void trimSpaces(char *str)
 	str[i] = '\0'; // Null terminate the modified string
 }
 
+char current_username[MAX_USERNAME_LENGTH];
+
 void make_folder(char username[MAX_SIZE])
 {
+
 	strcpy(current_username, username);
 	char command[MAX_SIZE];
 	char folder_name[MAX_SIZE];
@@ -624,7 +629,7 @@ int ftserve_start_data_conn(int sock_control)
  * over data connection
  * Return -1 on error, 0 on success
  */
-void list_files(const char *path, int depth, int is_last, int sock_data);
+void list_files(const char *path, int depth, int sock_data);
 
 int ftserve_list(int sock_data, int sock_control)
 {
@@ -634,75 +639,149 @@ int ftserve_list(int sock_data, int sock_control)
 	getcwd(curr_dir, sizeof(curr_dir));
 	strcat(curr_dir, "/data");
 
-	list_files(curr_dir, 0, 1, sock_data); // Start with depth 0 and is_last = 1 (true) for the root directory
+	list_files(curr_dir, 0, sock_data); // Start with depth 0 and is_last = 1 (true) for the root directory
 
 	return 0;
 }
 
-void list_files(const char *path, int depth, int is_last, int sock_data)
+// void list_files(const char *path, int depth, int is_last, int sock_data)
+// {
+// 	DIR *dir;
+// 	struct dirent **output;
+// 	int n;
+
+// 	if (!(dir = opendir(path)))
+// 		return;
+
+// 	n = scandir(path, &output, NULL, alphasort);
+// 	if (n < 0)
+// 	{
+// 		perror("scandir");
+// 		return;
+// 	}
+
+// 	while (n--)
+// 	{
+// 		if (strcmp(output[n]->d_name, ".") == 0 || strcmp(output[n]->d_name, "..") == 0)
+// 			continue;
+
+// 		// Print directory or file name with proper indentation
+// 		for (int i = 0; i < depth; i++)
+// 		{
+// 			if (i == depth - 1)
+// 			{
+// 				if (is_last)
+// 					send(sock_data, "    ", 4, 0);
+// 				else
+// 					send(sock_data, "|   ", 4, 0);
+// 			}
+// 			else
+// 			{
+// 				if (is_last)
+// 					send(sock_data, "    ", 4, 0);
+// 				else
+// 					send(sock_data, "|   ", 4, 0);
+// 			}
+// 		}
+// 		if (output[n]->d_type == DT_DIR)
+// 		{
+// 			send(sock_data, "|-- ", 4, 0);
+// 			send(sock_data, output[n]->d_name, strlen(output[n]->d_name), 0);
+// 			send(sock_data, "/\n", 2, 0);
+
+// 			// Prepare next path for recursion
+// 			char next_path[MAX_SIZE];
+// 			snprintf(next_path, sizeof(next_path), "%s/%s", path, output[n]->d_name);
+
+// 			// Recursively list files in the subdirectory
+// 			list_files(next_path, depth + 1, n == 0, sock_data); // n == 0 means it's the last entry in the current directory
+// 		}
+// 		else
+// 		{
+// 			send(sock_data, "|-- ", 4, 0);
+// 			send(sock_data, output[n]->d_name, strlen(output[n]->d_name), 0);
+// 			send(sock_data, "\n", 1, 0);
+// 		}
+// 		free(output[n]);
+// 	}
+// 	free(output);
+// 	closedir(dir);
+// }
+int count_entries(const char *path)
+{
+	int count = 0;
+	DIR *d = opendir(path);
+	struct dirent *entry;
+	if (!d)
+		return -1; // Return -1 in case of an error
+
+	while ((entry = readdir(d)) != NULL)
+	{
+		if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
+		{
+			count++;
+		}
+	}
+	closedir(d);
+	return count;
+}
+
+void list_files(const char *path, int depth, int sock_data)
 {
 	DIR *dir;
-	struct dirent **output;
-	int n;
+	struct dirent *entry;
 
 	if (!(dir = opendir(path)))
 		return;
 
-	n = scandir(path, &output, NULL, alphasort);
-	if (n < 0)
-	{
-		perror("scandir");
-		return;
-	}
+	// Count total entries in the current directory for tracking the last entry
+	int total_entries = count_entries(path);
+	int entries_count = 0;
 
-	while (n--)
+	while ((entry = readdir(dir)) != NULL)
 	{
-		if (strcmp(output[n]->d_name, ".") == 0 || strcmp(output[n]->d_name, "..") == 0)
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
 			continue;
 
-		// Print directory or file name with proper indentation
-		for (int i = 0; i < depth; i++)
-		{
-			if (i == depth - 1)
-			{
-				if (is_last)
-					send(sock_data, "    ", 4, 0);
-				else
-					send(sock_data, "|   ", 4, 0);
-			}
-			else
-			{
-				if (is_last)
-					send(sock_data, "    ", 4, 0);
-				else
-					send(sock_data, "|   ", 4, 0);
-			}
-		}
-		if (output[n]->d_type == DT_DIR)
-		{
-			send(sock_data, "|-- ", 4, 0);
-			send(sock_data, output[n]->d_name, strlen(output[n]->d_name), 0);
-			send(sock_data, "/\n", 2, 0);
+		entries_count++; // Increment count of processed entries
 
-			// Prepare next path for recursion
-			char next_path[MAX_SIZE];
-			snprintf(next_path, sizeof(next_path), "%s/%s", path, output[n]->d_name);
+		// Determine if it's the last entry in the current directory
+		int is_last_entry = (entries_count == total_entries);
 
-			// Recursively list files in the subdirectory
-			list_files(next_path, depth + 1, n == 0, sock_data); // n == 0 means it's the last entry in the current directory
+		// Prepare entry line with appropriate indentation
+		char entry_line[MAX_SIZE];
+		char prefix[MAX_SIZE]; // Buffer to hold the prefix string
+		if (depth > 0)
+		{
+			strcpy(prefix, "|   "); // Standard indentation for non-root items
 		}
 		else
 		{
-			send(sock_data, "|-- ", 4, 0);
-			send(sock_data, output[n]->d_name, strlen(output[n]->d_name), 0);
-			send(sock_data, "\n", 1, 0);
+			strcpy(prefix, ""); // No indentation for root items
 		}
-		free(output[n]);
+
+		char lineSymbol[MAX_SIZE];							 // Buffer to hold the line symbol string
+		strcpy(lineSymbol, is_last_entry ? "|-- " : "|-- "); // Last entry uses `-- else |--
+
+		snprintf(entry_line, sizeof(entry_line), "%s%s%s\n", prefix, lineSymbol, entry->d_name);
+
+		// Send the entry line in a single send call
+		send(sock_data, entry_line, strlen(entry_line), 0);
+
+		// If it's a directory, recursively list files in the subdirectory
+		if (entry->d_type == DT_DIR)
+		{
+			// Prepare next path for recursion
+			char next_path[MAX_SIZE];
+			snprintf(next_path, sizeof(next_path), "%s/%s", path, entry->d_name);
+
+			// Recursively list files in the subdirectory
+			list_files(next_path, depth + 1, sock_data);
+		}
 	}
-	free(output);
+
 	closedir(dir);
 }
-
 int compare(const struct dirent **a, const struct dirent **b)
 {
 	return strcasecmp((*a)->d_name, (*b)->d_name);

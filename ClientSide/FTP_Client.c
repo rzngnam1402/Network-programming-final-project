@@ -397,7 +397,7 @@ int ftclient_read_command(char *user_input, int size, struct command *cstruct)
 	// chang directory on client side
 	if (strcmp(user_input, "!ls") == 0 || strcmp(user_input, "!ls ") == 0)
 	{
-		system("ls"); // client side
+		system("tree"); // client side
 		return 1;
 	}
 	else if (strcmp(user_input, "!pwd") == 0 || strcmp(user_input, "!pwd ") == 0)
@@ -691,7 +691,7 @@ int ftclient_list(int sock_data, int sock_ctrl)
 	memset(buf, 0, sizeof(buf));
 	while ((num_recvd = recv(sock_data, buf, MAX_SIZE, 0)) > 0)
 	{
-		printTree(buf);
+		printf("%s", buf);
 		memset(buf, 0, sizeof(buf));
 	}
 

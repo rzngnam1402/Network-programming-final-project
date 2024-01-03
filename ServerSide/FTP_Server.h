@@ -18,6 +18,8 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include <dirent.h>
+#include <asm-generic/socket.h>
 
 #define INVALID_SOCKET -1
 #define INVALID_IP -1
