@@ -1,13 +1,13 @@
-
 #include "FTP_Server.h"
 
+char current_username[MAX_USERNAME_LENGTH];
 // result of search file
 typedef struct
 {
 	int count;
 	char **files;
 } SearchResult;
-/**
+/*
  * Trim whiteshpace and line ending
  * characters from a string
  */
@@ -629,7 +629,8 @@ int ftserve_start_data_conn(int sock_control)
  * over data connection
  * Return -1 on error, 0 on success
  */
-void list_files(const char *path, int depth, int sock_data);
+char prefix[MAX_SIZE] = ""; // Buffer to hold the prefix string
+void list_files(const char *path, int depth, int sock_data, char prefix[MAX_SIZE]);
 
 int ftserve_list(int sock_data, int sock_control)
 {
@@ -637,9 +638,9 @@ int ftserve_list(int sock_data, int sock_control)
 	memset(curr_dir, 0, MAX_SIZE);
 
 	getcwd(curr_dir, sizeof(curr_dir));
-	strcat(curr_dir, "/data");
+	// strcat(curr_dir, "/data");
 
-	list_files(curr_dir, 0, sock_data); // Start with depth 0 and is_last = 1 (true) for the root directory
+	list_files(curr_dir, 0, sock_data, prefix); // Start with depth 0 and is_last = 1 (true) for the root directory
 
 	return 0;
 }
@@ -726,7 +727,7 @@ int count_entries(const char *path)
 	return count;
 }
 
-void list_files(const char *path, int depth, int sock_data)
+void list_files(const char *path, int depth, int sock_data, char prefix[MAX_SIZE])
 {
 	DIR *dir;
 	struct dirent *entry;
@@ -740,7 +741,8 @@ void list_files(const char *path, int depth, int sock_data)
 
 	while ((entry = readdir(dir)) != NULL)
 	{
-		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0 || strcmp(entry->d_name, "private") == 0)
 			continue;
 
 		entries_count++; // Increment count of processed entries
@@ -750,18 +752,18 @@ void list_files(const char *path, int depth, int sock_data)
 
 		// Prepare entry line with appropriate indentation
 		char entry_line[MAX_SIZE];
-		char prefix[MAX_SIZE]; // Buffer to hold the prefix string
+
 		if (depth > 0)
 		{
-			strcpy(prefix, "|   "); // Standard indentation for non-root items
+			strcat(prefix, "|   "); // Standard indentation for non-root items
 		}
 		else
 		{
 			strcpy(prefix, ""); // No indentation for root items
 		}
 
-		char lineSymbol[MAX_SIZE];							 // Buffer to hold the line symbol string
-		strcpy(lineSymbol, is_last_entry ? "|-- " : "|-- "); // Last entry uses `-- else |--
+		char lineSymbol[MAX_SIZE];	// Buffer to hold the line symbol string
+		strcpy(lineSymbol, "|-- "); // Last entry uses |--
 
 		snprintf(entry_line, sizeof(entry_line), "%s%s%s\n", prefix, lineSymbol, entry->d_name);
 
@@ -774,10 +776,10 @@ void list_files(const char *path, int depth, int sock_data)
 			// Prepare next path for recursion
 			char next_path[MAX_SIZE];
 			snprintf(next_path, sizeof(next_path), "%s/%s", path, entry->d_name);
-
 			// Recursively list files in the subdirectory
-			list_files(next_path, depth + 1, sock_data);
+			list_files(next_path, depth + 1, sock_data, prefix);
 		}
+		strcpy(prefix, "");
 	}
 
 	closedir(dir);
@@ -786,7 +788,6 @@ int compare(const struct dirent **a, const struct dirent **b)
 {
 	return strcasecmp((*a)->d_name, (*b)->d_name);
 }
-
 int ftserve_list_sorted(int sock_data, int sock_control)
 {
 	struct dirent **output = NULL;
@@ -795,7 +796,7 @@ int ftserve_list_sorted(int sock_data, int sock_control)
 
 	char curr_dir[MAX_SIZE];
 	getcwd(curr_dir, sizeof(curr_dir));
-	strcat(curr_dir, "/data");
+	// strcat(curr_dir, "/data");
 	int n = scandir(curr_dir, &output, NULL, compare);
 
 	if (n > 0)
@@ -909,9 +910,13 @@ void ftserve_retr(int sock_control, int sock_data, char *filename)
 	char data[MAX_SIZE];
 	memset(data, 0, MAX_SIZE);
 	size_t num_read;
-	char dest[MAX_SIZE];
-	strcpy(dest, "./data/");
+	char dest[256];
+	char curr_dir[MAX_SIZE];
+	memset(curr_dir, 0, MAX_SIZE);
 
+	getcwd(curr_dir, sizeof(curr_dir));
+	strcpy(dest, curr_dir);
+	strcat(dest, "/");
 	strcat(dest, filename);
 	fd = fopen(dest, "r");
 	if (!fd)
@@ -1031,8 +1036,13 @@ int recvFile(int sock_control, int sock_data, char *filename)
 	char data[MAX_SIZE];
 	int size, stt = 0;
 	recv(sock_control, &stt, sizeof(stt), 0);
-	char dest[50] = "./data/";
-	strcat(dest, filename);
+	char curr_dir[MAX_SIZE];
+	memset(curr_dir, 0, MAX_SIZE);
+	getcwd(curr_dir, sizeof(curr_dir));
+	strcat(curr_dir, "/");
+	strcat(curr_dir, filename);
+	// printf("%s\n", curr_dir);
+
 	if (stt == 550)
 	{
 		printf("can't not open file!\n");
@@ -1040,7 +1050,7 @@ int recvFile(int sock_control, int sock_data, char *filename)
 	}
 	else
 	{
-		FILE *fd = fopen(dest, "w");
+		FILE *fd = fopen(curr_dir, "w");
 
 		while ((size = recv(sock_data, data, MAX_SIZE, 0)) > 0)
 		{
@@ -1079,11 +1089,11 @@ int private_recv(int sock_control, int sock_data, char *filename)
 	char data[MAX_SIZE];
 	int size, stt = 0;
 	recv(sock_control, &stt, sizeof(stt), 0);
-	char dest[255] = "./data/private/";
+	char dest[255] = "./private/";
 	strcat(dest, current_username);
 	strcat(dest, "/");
 	strcat(dest, filename);
-
+	printf("%s\n", dest);
 	if (stt == 550)
 	{
 		printf("can't not open file!\n");
@@ -1254,7 +1264,15 @@ int createDirectory(const char *path)
  */
 void ftserve_mkdir(int sock_control, int sock_data, char *arg)
 {
-	if (createDirectory(arg) == 0)
+	char dest[MAX_SIZE];
+	char curr_dir[MAX_SIZE];
+	memset(curr_dir, 0, MAX_SIZE);
+
+	getcwd(curr_dir, sizeof(curr_dir));
+	strcpy(dest, curr_dir);
+	strcat(dest, "/");
+	strcat(dest, arg);
+	if (createDirectory(dest) == 0)
 		send_response(sock_control, 254);
 	else
 		send_response(sock_control, 456);
@@ -1462,6 +1480,7 @@ void ftserve_process(int sock_control)
 		send_response(sock_control, 430);
 		exit(0);
 	}
+	chdir("./data");
 
 	while (1)
 	{

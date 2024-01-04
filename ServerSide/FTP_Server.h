@@ -19,7 +19,7 @@
 #include <sys/stat.h>
 #include <ctype.h>
 #include <dirent.h>
-#include <asm-generic/socket.h>
+// #include <asm-generic/socket.h>
 
 #define INVALID_SOCKET -1
 #define INVALID_IP -1
@@ -33,7 +33,7 @@
 typedef struct sockaddr_in SOCKADDR_IN;
 typedef struct sockaddr SOCKADDR;
 
-char current_username[MAX_USERNAME_LENGTH];
+// char current_username[MAX_USERNAME_LENGTH];
 
 /**
  * Trim whiteshpace and line ending

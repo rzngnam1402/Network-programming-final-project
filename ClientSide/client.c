@@ -106,7 +106,7 @@ int main(int argc, char const *argv[])
 				// execute command
 				if (strcmp(cmd.code, "LIST") == 0)
 				{
-					runProgressBar(1);
+					// runProgressBar(1);
 					ftclient_list(data_sock, sock_control);
 				}
 				else if (strcmp(cmd.code, "HELP") == 0)
