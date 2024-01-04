@@ -117,7 +117,7 @@ void make_folder(char username[MAX_SIZE])
 	strcpy(current_username, username);
 	char command[MAX_SIZE];
 	char folder_name[MAX_SIZE];
-	strcpy(folder_name, "./data/");
+	strcpy(folder_name, "./data/private/");
 	strcat(folder_name, current_username);
 	strcpy(command, "mkdir ");
 	strcat(command, folder_name);
@@ -965,7 +965,7 @@ void private_retr(int sock_control, int sock_data, char *arg)
 	strcpy(username, filenames[0]);
 	strcpy(filename, filenames[1]);
 
-	strcpy(dest, "./data/");
+	strcpy(dest, "./data/private/");
 	strcat(dest, username);
 	strcat(dest, "/");
 	strcat(dest, filename);
@@ -1079,7 +1079,7 @@ int private_recv(int sock_control, int sock_data, char *filename)
 	char data[MAX_SIZE];
 	int size, stt = 0;
 	recv(sock_control, &stt, sizeof(stt), 0);
-	char dest[255] = "./data/";
+	char dest[255] = "./data/private/";
 	strcat(dest, current_username);
 	strcat(dest, "/");
 	strcat(dest, filename);
