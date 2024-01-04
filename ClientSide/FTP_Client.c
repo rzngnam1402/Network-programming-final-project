@@ -756,7 +756,11 @@ int ftclient_get(int data_sock, int sock_control, char *arg)
 {
 	char data[MAX_SIZE];
 	int size;
-	FILE *fd = fopen(arg, "w");
+	char dest[MAX_SIZE];
+	strcpy(dest, "./download/");
+	strcat(dest, arg);
+	printf("%s\n", dest);
+	FILE *fd = fopen(dest, "w");
 
 	while ((size = recv(data_sock, data, MAX_SIZE, 0)) > 0)
 	{

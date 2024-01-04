@@ -142,5 +142,6 @@ void ftclient_help(int sock_data, int sock_control);
 
 int login_menu();
 int signup();
+void runProgressBar(int status);
 
 #endif // FTP_CLIENT_H
