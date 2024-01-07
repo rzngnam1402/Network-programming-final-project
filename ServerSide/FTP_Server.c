@@ -25,7 +25,7 @@ void trimstr(char *str, int n)
 
 int check_private_key(char *input_username, char *user_key)
 {
-	const char *filename = "./auth/privatekey.txt";
+	const char *filename = "../auth/privatekey.txt";
 	char *pch;
 	char buf[MAX_SIZE];
 	char private_key[MAX_SIZE];
@@ -970,7 +970,13 @@ void private_retr(int sock_control, int sock_data, char *arg)
 	strcpy(username, filenames[0]);
 	strcpy(filename, filenames[1]);
 
-	strcpy(dest, "./data/private/");
+	char curr_dir[MAX_SIZE];
+	memset(curr_dir, 0, MAX_SIZE);
+
+	getcwd(curr_dir, sizeof(curr_dir));
+	strcpy(dest, curr_dir);
+	// strcpy(dest, "./data/private/");
+	strcat(dest, "/private/");
 	strcat(dest, username);
 	strcat(dest, "/");
 	strcat(dest, filename);
