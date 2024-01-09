@@ -794,7 +794,12 @@ int ftclient_private_get(int data_sock, int sock_control, char *arg)
 	rc = read_reply(sock_control);
 	if (rc == 200)
 	{
+		runProgressBar(1);
 		ftclient_get(data_sock, sock_control, arg);
+	}
+	else
+	{
+		runProgressBar(0);
 	}
 	return 0;
 }

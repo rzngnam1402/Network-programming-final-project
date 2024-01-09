@@ -803,7 +803,7 @@ int ftserve_list_sorted(int sock_data, int sock_control)
 	{
 		for (int i = 0; i < n; i++)
 		{
-			if (strcmp(output[i]->d_name, ".") != 0 && strcmp(output[i]->d_name, "..") != 0)
+			if (strcmp(output[i]->d_name, ".") != 0 && strcmp(output[i]->d_name, "..") != 0 && strcmp(output[i]->d_name, "private") != 0)
 			{
 				strcat(msgToClient, output[i]->d_name);
 				strcat(msgToClient, "  ");
@@ -830,7 +830,14 @@ int ftserve_zip(int sock_data, int sock_control)
 {
 	char data[MAX_SIZE];
 	int size, stt = 0;
-	const char *filename = "./data/client_folder.zip";
+	const char *filename = "client_folder.zip";
+	char dest[256];
+	char curr_dir[MAX_SIZE];
+	memset(curr_dir, 0, MAX_SIZE);
+	getcwd(curr_dir, sizeof(curr_dir));
+	strcpy(dest, curr_dir);
+	strcat(dest, "/");
+	strcat(dest, filename);
 	recv(sock_control, &stt, sizeof(stt), 0);
 	if (stt == 550)
 	{
@@ -839,7 +846,7 @@ int ftserve_zip(int sock_data, int sock_control)
 	}
 	else
 	{
-		FILE *fd = fopen(filename, "w");
+		FILE *fd = fopen(dest, "w");
 
 		while ((size = recv(sock_data, data, MAX_SIZE, 0)) > 0)
 		{

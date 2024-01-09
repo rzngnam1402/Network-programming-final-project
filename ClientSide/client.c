@@ -279,7 +279,6 @@ int main(int argc, char const *argv[])
 						close(data_sock);
 						continue;
 					}
-					runProgressBar(1);
 					clock_t start = clock();
 					ftclient_private_get(data_sock, sock_control, cmd.arg);
 					clock_t end = clock();
