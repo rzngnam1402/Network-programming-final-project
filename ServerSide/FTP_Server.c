@@ -23,6 +23,31 @@ void trimstr(char *str, int n)
 	}
 }
 
+void log_activity(const char *username, const char *cmd, const char *arg)
+{
+	FILE *file = fopen("./auth/log.txt", "a");
+	if (file == NULL)
+	{
+		printf("Error opening log file!\n");
+		return;
+	}
+
+	time_t rawtime;
+	struct tm *timeinfo;
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+
+	char activity[256];
+	snprintf(activity, sizeof(activity), "User: %s, Command: %s %s", username, cmd, arg);
+
+	fprintf(file, "----------------------------------------\n");
+	fprintf(file, "Time: %s", asctime(timeinfo)); // asctime() adds a newline character
+	fprintf(file, "%s\n", activity);
+	fprintf(file, "----------------------------------------\n\n");
+
+	fclose(file);
+}
+
 int check_private_key(char *input_username, char *user_key)
 {
 	const char *filename = "../auth/privatekey.txt";
@@ -1499,6 +1524,8 @@ void ftserve_process(int sock_control)
 	{
 		// Wait for command
 		int rc = ftserve_recv_cmd(sock_control, cmd, arg);
+
+		log_activity(current_username, cmd, arg);
 
 		if ((rc < 0) || (rc == 221))
 		{
